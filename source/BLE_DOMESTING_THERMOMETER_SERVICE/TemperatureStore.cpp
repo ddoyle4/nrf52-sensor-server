@@ -54,7 +54,11 @@ int TemperatureStore::getStoreSize(){
 }
 
 void TemperatureStore::addReading(float temp){
+
   
+  if(getCurrentSize() > 0){ // Ignore time delta for first reading
+
+  }
   TemperatureRecord reading(temp, getNextID(), 0);
 
   store[(top%storeSize)] = reading;

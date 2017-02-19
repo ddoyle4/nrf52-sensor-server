@@ -2,6 +2,7 @@
 #define __TEMPERATURE_STORE__
 
 #include "TemperatureRecord.h"
+#include "mbed.h"
 #include <stdint.h>
 #include <cstring>
 
@@ -25,6 +26,7 @@ class TemperatureStore {
   int storeSize, top, bottom, memorySize;
   TemperatureRecord * store;
   uint8_t * stage;
+  static time_t lastReading;
 };
 
 

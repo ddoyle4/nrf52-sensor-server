@@ -85,6 +85,12 @@ void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context)
 
 int main()
 {
+  /*
+   * NOTE: Not setting any particularly important time here. Just ensuring that
+   * the clock is set to some value so that relative time measurements can be made
+   * in the services used. 
+   */
+  set_time(1256729737);
   usbDebug.printf("STARTING!! \n\r");
 
   eventQueue.call_every(3000, periodicCallback);
