@@ -2,12 +2,13 @@
 #include <mbed.h>
 #include "ble/BLE.h"
 #include "ble/Gap.h"
-#include "BLE_DOMESTING_THERMOMETER_SERVICE/DS1820/DS1820.h"
-#include "BLE_DOMESTING_THERMOMETER_SERVICE/DomesticThermometerService.h"
+//#include "BLE_DOMESTING_THERMOMETER_SERVICE/DS1820/DS1820.h"
+//#include "BLE_DOMESTING_THERMOMETER_SERVICE/DomesticThermometerService.h"
+#include "BLE_DOMESTIC_SENSOR_SERVICE/BLE_DomesticSensorService.h"
 
 #define DATA_PIN p11
 
-DS1820 probe(DATA_PIN);
+//DS1820 probe(DATA_PIN);
 
 DigitalOut led1(LED1, 1);
 
@@ -16,7 +17,7 @@ Serial usbDebug(USBTX, USBRX);
 const static char     DEVICE_NAME[] = "Domestic Thermometer";
 static const uint16_t uuid16_list[] = {0xFFFF};
 
-static DomesticThermometerService *dtServicePtr;
+static DomesticSensorService *DSServicePtr;
 
 static EventQueue eventQueue(
     /* event count */ 16 * /* event size */ 32
@@ -28,10 +29,10 @@ void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
 }
 
 void updateSensorValue() {
-  probe.convertTemperature(true, DS1820::all_devices);
+  /*  probe.convertTemperature(true, DS1820::all_devices);
   float temp = probe.temperature();
   dtServicePtr->addTemperatureReading(temp);
-  dtServicePtr->flush();
+  dtServicePtr->flush();*/
 }
 
 void periodicCallback(void)
@@ -66,7 +67,7 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble.gap().onDisconnection(disconnectionCallback);
 
     /* Setup primary service. */
-    dtServicePtr = new DomesticThermometerService(ble);
+    DSServicePtr = new DomesticSensorService(ble, &usbDebug);
 
     /* Setup advertising. */
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
@@ -99,6 +100,7 @@ int main()
   ble.onEventsToProcess(scheduleBleEventsProcessing);
   ble.init(bleInitComplete);
 
+  usbDebug.printf("HEREERE");
   eventQueue.dispatch_forever();
 
   return 0;
