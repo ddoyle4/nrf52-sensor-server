@@ -18,8 +18,9 @@ void DomesticSensorService::configurationWriteCallback(uint16_t interval, uint32
 void DomesticSensorService::stagingCommandWriteCallback(const uint8_t *command){
   //  led3 = !led3;
 }
-/*
+
+//Return bool from here? Allow that to yay/nay the read for any reason
 void DomesticSensorService::stageBeforeReadCallback(){
   //  led4 = !led4;
 }
-*/
+

@@ -41,11 +41,11 @@ class SensorServerService {
 
   /* Stage */
   uint8_t * stageData() { return stage_data; }
-  //  virtual void stageBeforeReadCallback() =0;
+  virtual void stageBeforeReadCallback() =0;
 
   /* Callback Functions */
   void writeCallback(const GattWriteCallbackParams * params);
-  //  static void readCallback(const GattReadAuthCallbackParams * params);
+  void readCallback(GattReadAuthCallbackParams * params);
   
  protected:
   BLE &ble;

@@ -15,7 +15,7 @@ class DomesticSensorService : SensorServerService {
  private:
   void configurationWriteCallback(uint16_t interval, uint32_t threshold);
   void stagingCommandWriteCallback(const uint8_t * command);
-  //  void stageBeforeReadCallback();
+  void stageBeforeReadCallback();
 };
 
 

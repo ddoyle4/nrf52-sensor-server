@@ -24,7 +24,7 @@ SensorServerService::SensorServerService(BLE &_ble, Serial *_debugger) :
   GattService SSSService(SSS_UUID, SSSChars, sizeof(SSSChars) / sizeof(GattCharacteristic *));
   ble.addService(SSSService);
   ble.gattServer().onDataWritten(this, &SensorServerService::writeCallback);
-  //  stage_charac.setReadAuthorizationCallback(readCallback);
+  stage_charac.setReadAuthorizationCallback(this, &SensorServerService::readCallback);
   debugger->printf("SENSOR SERVICE STARTED\n\r");
 }
 
@@ -55,13 +55,13 @@ void SensorServerService::liveReadUpdate(uint8_t *newRead){
   const uint8_t * liveRead = liveRead_data;
   ble.gattServer().write(liveRead_charac.getValueHandle(), liveRead, LIVEREAD_SIZE);
 }
-/*
-void SensorServerService::readCallback(const GattReadAuthCallbackParams *params){
+
+void SensorServerService::readCallback(GattReadAuthCallbackParams *params){
   if (params->handle == stage_charac.getValueHandle()){
     stageBeforeReadCallback();
   }
 }
-*/
+
 void SensorServerService::writeCallback(const GattWriteCallbackParams *params){
   debugger->printf("WRITE CALLBACK\n\r");
   if (params->handle == configuration_charac.getValueHandle()){
@@ -73,4 +73,5 @@ void SensorServerService::writeCallback(const GattWriteCallbackParams *params){
     stagingCommandWriteCallback(params->data);
   }
 }
+
 
