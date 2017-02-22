@@ -20,11 +20,11 @@ SensorServerService::SensorServerService(BLE &_ble, Serial *_debugger) :
 				    &configuration_charac,
 				    &stagingCommand_charac,
 				    &stage_charac};
-
+  stage_charac.setReadAuthorizationCallback(this, &SensorServerService::readCallback);
   GattService SSSService(SSS_UUID, SSSChars, sizeof(SSSChars) / sizeof(GattCharacteristic *));
   ble.addService(SSSService);
   ble.gattServer().onDataWritten(this, &SensorServerService::writeCallback);
-  stage_charac.setReadAuthorizationCallback(this, &SensorServerService::readCallback);
+
 }
 
 SensorServerService::~SensorServerService(){}

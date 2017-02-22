@@ -23,7 +23,7 @@ class SensorStore {
   int getStageSize();
   
  private:
-  uint8_t getNextID();
+  void setStageData(stack<SensorRecord> records, unsigned int lastStageTimeDelta);
   void formatStage();
   unsigned  int storeSize, top, bottom, memorySize, stageSize;
   SensorRecord * store;

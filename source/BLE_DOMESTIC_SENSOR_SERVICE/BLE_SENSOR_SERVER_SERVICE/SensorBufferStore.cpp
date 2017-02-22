@@ -115,10 +115,14 @@ unsigned int SensorStore::flush(int) {
  * @return the number of records that were written to the stage
  */
 unsigned int SensorStore::flush(unsigned int oldestTime, unsigned int youngestTime){
-  unsigned int index = bottom,
+  unsigned int
+    index = bottom,
     relationalDelta,
     realTImeDelta,
-    prevRealTimeDelta;
+    prevRealTimeDelta,
+    accumulatedTime,
+    currentSize = 0,
+    maxStageSize = stageSize - STAGE_HEADER_SIZE - SensorRecord::SIZE_RECORD + 1;
 
   //realTimeDelta of record immediately before bottom (may not exist)
   prevRealTimeDelta = getOldestRecordTimeDelta() -
@@ -126,51 +130,56 @@ unsigned int SensorStore::flush(unsigned int oldestTime, unsigned int youngestTi
     
   SensorRecord currentRecord;     
 
-  stack<SenssorRecord> records;
-  
+  stack<SensorRecord> records;
+
+  bool accumulateTime = false;
+
+
+  //find all relevant records
   while(index < top){
     currentRecord = getRecord(index%storeSize);
+
     //amount of time (secs) between this record and previous record
     relationalDelta = currentRecord.getTimeDelta()*measurementInterval;
+
     //amount of time (secs) between now and when this record was stored
     realTimeDelta = relationalDelta + prevRealTimeDelta;
 
-    if(currentSize < (stageSize - SensorRecord::SIZE_RECORD)){
-      //room on stage for another record
-      if(currentRecordTime > oldestTime && currentRecordTime < youngestTime){
-	//record is within time spec
-	records.push(currentRecord);
-	currentSize += SensorRecord::SIZE_RECORD;
-      }
+    //stage record if there is space and it falls within time period
+    if( (currentSize < (stageSize - maxStageSize)) &&
+	(realTimeDelta > oldestTime) &&
+	(realTimeDelta < youngestTime) ){
 
+      records.push(currentRecord);
+      currentSize += SensorRecord::SIZE_RECORD;
     }
-    
+
+    //accumulate time deltas from last staged record
+    if(accumulateTime){
+      accumulatedTime += relationalDelta;
+    }
+
+    //start accumulating realTimeDelta of last staged record, starting
+    //with the next record if:
+    //we have at least one record AND EITHER further records
+    //are outside the time period OR we ran out of stage space
+    if( (records.size() > 0) &&                                    
+	((realTimeDelta > youngestTime) ||
+	 (currentSize < (stageSize - maxStageSize))) ){
+      accumulateTime = true;
+    }
+
     prevRealTimeDelta = realTimeDelta;
     index++;
   }
 
-  /*
-  //THIS IS PROBABLY UNECESSARY
-  SensorRecord youngestRecord = getRecord(top-1);
-  SensorRecord oldestRecord = getRecord(bottom);
-  unsigned int youngestRecordTime = youngestRecord.getTimeDelta()*measurementInterval;
-  unsigned int oldestRecordTime = oldestRecord.getTimeDelta()*measurementInterval;
-  
-  if((getCurrentSize() == 0) ||
-     (youngestRecordTime < oldestTime) ||
-     (oldestRecordTime > youngestTime)){
-    return 0;
-  }
+  double timeDelta = difftime(time(NULL), lastReadingTime) + accumulatedTime + 0.5;
+  setStageData(records, (unsigned int)timeDelta);
+  return records.size();
+}
 
-  
-  
-  while((oldestRecord.getTimeDelta() * measurementInterval) > oldest
-	&& index > bottom){
-    index--;
-    
-  }
+void SensorStore::setStageData(stack<SensorRecord> records, unsigned int timeDelta){
 
-  */
 }
 
 const uint8_t * SensorStore::package() const {
