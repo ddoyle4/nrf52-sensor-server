@@ -11,6 +11,7 @@
 //DS1820 probe(DATA_PIN);
 
 DigitalOut led1(LED1, 1);
+DigitalOut led2(LED2, 0);
 
 Serial usbDebug(USBTX, USBRX);
 
@@ -37,7 +38,7 @@ void updateSensorValue() {
 
 void periodicCallback(void)
 {
-    led1 = !led1; /* Do blinky on LED1 while we're waiting for BLE events */
+  //    led1 = !led1; /* Do blinky on LED1 while we're waiting for BLE events */
 
     eventQueue.call(updateSensorValue);
 
@@ -92,15 +93,16 @@ int main()
    * in the services used. 
    */
   set_time(1256729737);
-  usbDebug.printf("STARTING!! \n\r");
 
-  eventQueue.call_every(3000, periodicCallback);
+
+  //  eventQueue.call_every(3000, periodicCallback);
 
   BLE &ble = BLE::Instance();
   ble.onEventsToProcess(scheduleBleEventsProcessing);
   ble.init(bleInitComplete);
 
-  usbDebug.printf("HEREERE");
+
+  led2 = 1;
   eventQueue.dispatch_forever();
 
   return 0;

@@ -25,7 +25,6 @@ SensorServerService::SensorServerService(BLE &_ble, Serial *_debugger) :
   ble.addService(SSSService);
   ble.gattServer().onDataWritten(this, &SensorServerService::writeCallback);
   stage_charac.setReadAuthorizationCallback(this, &SensorServerService::readCallback);
-  debugger->printf("SENSOR SERVICE STARTED\n\r");
 }
 
 SensorServerService::~SensorServerService(){}
@@ -37,7 +36,6 @@ void SensorServerService::metadataFullCopy(uint8_t * newData){
 }
 
 void SensorServerService::metadataUpdateCurrentBufferSize(uint16_t newSize){
-  debugger->printf("updating current buffer %us\n\r", newSize);
   metadata_data[2] = newSize & 0xFF;
   metadata_data[3] = newSize >> 8;
   const uint8_t * metadata = metadata_data;
@@ -57,13 +55,20 @@ void SensorServerService::liveReadUpdate(uint8_t *newRead){
 }
 
 void SensorServerService::readCallback(GattReadAuthCallbackParams *params){
+  stageBeforeReadCallback();
   if (params->handle == stage_charac.getValueHandle()){
     stageBeforeReadCallback();
+    //    params->authorizationReply = true;
   }
 }
 
 void SensorServerService::writeCallback(const GattWriteCallbackParams *params){
   debugger->printf("WRITE CALLBACK\n\r");
+  if(stage_charac.isReadAuthorizationEnabled()){
+    debugger->printf("READ AUTH ENABLED");
+  } else {
+    debugger->printf("READ AUTH NOT ENABLED");
+  }
   if (params->handle == configuration_charac.getValueHandle()){
     uint16_t interval = 1;
     uint32_t threshold = 1;

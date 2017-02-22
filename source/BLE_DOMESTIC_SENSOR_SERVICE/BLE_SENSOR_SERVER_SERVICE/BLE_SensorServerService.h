@@ -5,6 +5,8 @@
 #include "ble/Gap.h"
 #include <cstring>
 #include "mbed.h"
+#include "GattCharacteristic.h"
+#include "GattCallbackParamTypes.h"
 
 class SensorServerService {
  public:
