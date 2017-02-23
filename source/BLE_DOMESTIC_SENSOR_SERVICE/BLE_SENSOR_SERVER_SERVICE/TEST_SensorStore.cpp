@@ -13,6 +13,7 @@ int main(){
   std::cout << "testStore stage size: " << testStore.getStageSize() << std::endl;
 
   time_t timeBeforeAdding = time(NULL);
+  std::cout << "time before sending: " << timeBeforeAdding << std::endl;
   std::cout << "size before adding: " << testStore.getCurrentSize() << std::endl;
   testStore.addReading(10.0);
   sleep(2*interval);
@@ -26,10 +27,13 @@ int main(){
   testStore.printStore();
 
   time_t timeAfterAdding = time(NULL);
+  std::cout << "time after adding: " << timeAfterAdding << std::endl;
 
   unsigned int oldest = (unsigned int)difftime(time(NULL), timeBeforeAdding);
+  std::cout << "oldest: " << (oldest) << std::endl;
   unsigned int youngest = (unsigned int)difftime(time(NULL), timeAfterAdding);
-
+  std::cout << "youngest: " << (youngest) << std::endl;
+  
   std::cout << "numbder of records staged: " << testStore.flush(oldest, youngest) << std::endl;
   
 
