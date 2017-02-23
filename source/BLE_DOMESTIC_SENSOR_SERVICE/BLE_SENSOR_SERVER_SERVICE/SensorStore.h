@@ -2,10 +2,11 @@
 #define __SENSOR_STORE__
 
 #include "SensorRecord.h"
-#include "mbed.h"
+//#include "mbed.h"
 #include <stdint.h>
 #include <cstring>
 #include <stack>
+#include <time.h>
 
 class SensorStore {
 
@@ -23,9 +24,10 @@ class SensorStore {
   int getStageSize();
   
  private:
-  void setStageData(stack<SensorRecord> records, unsigned int lastStageTimeDelta);
+  void setStageData(std::stack<SensorRecord> records, unsigned int lastStageTimeDelta);
+  unsigned int getOldestRealTimeDelta();
   void formatStage();
-  unsigned  int storeSize, top, bottom, memorySize, stageSize;
+  int storeSize, top, bottom, memorySize, stageSize;
   SensorRecord * store;
   uint8_t * stage;
   uint16_t measurementInterval;

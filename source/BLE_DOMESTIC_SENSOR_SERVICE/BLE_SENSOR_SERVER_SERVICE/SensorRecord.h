@@ -14,6 +14,7 @@ class SensorRecord {
   static const unsigned SIZE_VALUE = 4;
   static const unsigned SIZE_RECORD = SIZE_VALUE + SIZE_TIME_DELTA;
 
+  SensorRecord();
   SensorRecord(float reading, uint16_t timeDelta);
   uint16_t getTimeDelta();
   uint8_t *getData(void);

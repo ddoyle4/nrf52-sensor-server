@@ -1,6 +1,8 @@
 #include "SensorRecord.h"
 #include <iostream>
 
+SensorRecord::SensorRecord(){}
+
 SensorRecord::SensorRecord(float _reading, uint16_t _timeDelta) :
   reading(_reading),
   timeDelta(_timeDelta)
@@ -20,5 +22,9 @@ const uint8_t *SensorRecord::getData() const {
  
 void SensorRecord::print(){
   std::cout << "RECORD:\t" << timeDelta << "\t" << reading;
+}
+
+uint16_t SensorRecord::getTimeDelta(){
+  return timeDelta;
 }
 
