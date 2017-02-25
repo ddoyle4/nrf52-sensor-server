@@ -99,9 +99,9 @@ unsigned int SensorStore::flush(unsigned int oldestTimeDelta, unsigned int young
     relationalDelta,
     realTimeDelta,
     prevRealTimeDelta,
-    accumulatedTime,
+    accumulatedRelTime = 0,
     currentSize = 0,
-    maxStageSize = stageSize - STAGE_HEADER_SIZE - SensorRecord::SIZE_RECORD + 1;
+    maxReadingsSize = stageSize - STAGE_HEADER_SIZE - SensorRecord::SIZE_RECORD + 1;
 
   //the oldest time on record for this buffer. It is the time pointed to
   //by the time delta of oldest record in the store
@@ -111,9 +111,6 @@ unsigned int SensorStore::flush(unsigned int oldestTimeDelta, unsigned int young
 
   std::stack<SensorRecord> records;
 
-  bool accumulateTime = false;
-
-
   //find all relevant records
   while(index < top){
     currentRecord = getRecord(index%storeSize);
@@ -122,10 +119,10 @@ unsigned int SensorStore::flush(unsigned int oldestTimeDelta, unsigned int young
     relationalDelta = currentRecord.getTimeDelta()*measurementInterval;
 
     //amount of time (secs) between now and when this record was stored
-    realTimeDelta = relationalDelta + prevRealTimeDelta;
+    realTimeDelta = prevRealTimeDelta - relationalDelta;
 
     //stage record if there is space and it falls within time period
-    if( (currentSize < (stageSize - maxStageSize)) &&
+    if( (currentSize < maxReadingsSize) &&
 	(realTimeDelta <= oldestTimeDelta) &&
 	(realTimeDelta >= youngestTimeDelta) ){
 
@@ -135,16 +132,19 @@ unsigned int SensorStore::flush(unsigned int oldestTimeDelta, unsigned int young
 
     // accumulate timeDelta to last appropriately staged reading
     if( (records.size() > 0) &&                                    
-	((realTimeDelta > youngestTimeDelta) ||
-	 (currentSize >= (stageSize - maxStageSize - 1))) ){
-      accumulatedTime += relationalDelta;
+	((realTimeDelta < youngestTimeDelta) ||
+	 (currentSize >= maxReadingsSize) )){
+      accumulatedRelTime += relationalDelta;
     }
 
     prevRealTimeDelta = realTimeDelta;
     index++;
   }
 
-  double timeDelta = difftime(time(NULL), lastReadingTime) + accumulatedTime + 0.5;
+  double timeDelta = difftime(time(NULL), lastReadingTime) + accumulatedRelTime + 0.5;
+  std::cout << "accumultaed time: " << accumulatedRelTime << std::endl;
+
+  
   setStageData(records, (unsigned int)timeDelta);
   return records.size();
 }
@@ -161,13 +161,14 @@ unsigned int SensorStore::getOldestRealTimeDelta(){
 
   unsigned int timeDelta = (unsigned int)(difftime(time(NULL), lastReadingTime) + 0.5);
 
+  unsigned int relationalTimeDelta = 0;
   unsigned int index = top - 1; 
   for(int i = getCurrentSize(); i > 0; i--){
-    timeDelta += getRecord(index%storeSize).getTimeDelta();
+    relationalTimeDelta += getRecord(index%storeSize).getTimeDelta();
     index--;
   }
 
-  return timeDelta * measurementInterval;
+  return (relationalTimeDelta * measurementInterval) + timeDelta;
 }
 
 void SensorStore::setStageData(std::stack<SensorRecord> records, unsigned int timeDelta){

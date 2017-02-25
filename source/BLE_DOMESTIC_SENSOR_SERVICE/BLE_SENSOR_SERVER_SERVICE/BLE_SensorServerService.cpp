@@ -62,6 +62,11 @@ void SensorServerService::readCallback(GattReadAuthCallbackParams *params){
   }
 }
 
+/** 
+ * 
+ * 
+ * @param params 
+ */
 void SensorServerService::writeCallback(const GattWriteCallbackParams *params){
   debugger->printf("WRITE CALLBACK\n\r");
   if(stage_charac.isReadAuthorizationEnabled()){
