@@ -143,7 +143,8 @@ unsigned int SensorStore::flush(unsigned int oldestTimeDelta, unsigned int young
 
   double timeDelta = difftime(time(NULL), lastReadingTime) + accumulatedRelTime + 0.5;
   std::cout << "accumultaed time: " << accumulatedRelTime << std::endl;
-
+  std::cout << "overall time delta: " << timeDelta << std::endl;
+ 
   
   setStageData(records, (unsigned int)timeDelta);
   return records.size();
@@ -172,12 +173,16 @@ unsigned int SensorStore::getOldestRealTimeDelta(){
 }
 
 void SensorStore::setStageData(std::stack<SensorRecord> records, unsigned int timeDelta){
+
+  std::cout << "Setting stage data with " << records.size() <<  " records and time delta " << timeDelta << std::endl;
   int indexOffset = 0;
   std::memcpy(&stage[indexOffset], &timeDelta, 4);
   indexOffset += 4;
-  for(int i = 0; i < records.size(); i++){
+  int size = records.size();
+  for(int i = 0; i < size; i++){
     std::memcpy(&stage[indexOffset], ((SensorRecord)records.top()).getData(), SensorRecord::SIZE_RECORD);
     records.pop();
+    indexOffset += SensorRecord::SIZE_RECORD;
   }
 }
 
