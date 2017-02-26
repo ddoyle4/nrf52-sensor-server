@@ -30,6 +30,8 @@ int main(){
   std::cout << "testStore mem size: " << testStore.getStoreSize() << std::endl;
   std::cout << "testStore stage size: " << testStore.getStageSize() << std::endl;
 
+  testStore.addReading(10.0);
+  sleep(2*interval);                // + 4
 
   
   time_t timeBeforeAdding = time(NULL);

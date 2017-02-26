@@ -76,7 +76,7 @@ int SensorStore::getCurrentSize(){
 /** 
  * Stores in stage all records within the time period specified.
  * Where there are more records than stage space, the oldest records
- * are prioritised.
+ * are prioritized.
  * The number of seconds that have past since the first record stored on the stage
  * will be saved in the first four bytes of the stage. After this, records
  * have the following format:
@@ -103,12 +103,10 @@ unsigned int SensorStore::flush(unsigned int oldestTimeDelta, unsigned int young
     currentSize = 0,
     maxReadingsSize = stageSize - STAGE_HEADER_SIZE - SensorRecord::SIZE_RECORD + 1;
 
-  //the oldest time on record for this buffer. It is the time pointed to
-  //by the time delta of oldest record in the store
+  //real time delta of time pointed to by relational delta of store[bottom]
   prevRealTimeDelta = getOldestRealTimeDelta();
-  std::cout << "prev readl time delta: " << prevRealTimeDelta << std::endl;
-  SensorRecord currentRecord;     
 
+  SensorRecord currentRecord;     
   std::stack<SensorRecord> records;
 
   //find all relevant records
@@ -142,11 +140,8 @@ unsigned int SensorStore::flush(unsigned int oldestTimeDelta, unsigned int young
   }
 
   double timeDelta = difftime(time(NULL), lastReadingTime) + accumulatedRelTime + 0.5;
-  std::cout << "accumultaed time: " << accumulatedRelTime << std::endl;
-  std::cout << "overall time delta: " << timeDelta << std::endl;
- 
-  
   setStageData(records, (unsigned int)timeDelta);
+  
   return records.size();
 }
 
@@ -173,12 +168,12 @@ unsigned int SensorStore::getOldestRealTimeDelta(){
 }
 
 void SensorStore::setStageData(std::stack<SensorRecord> records, unsigned int timeDelta){
-
-  std::cout << "Setting stage data with " << records.size() <<  " records and time delta " << timeDelta << std::endl;
-  int indexOffset = 0;
+  std::cout << " -- " << records.size() << " " << timeDelta << std::endl; 
+  int indexOffset = 0, size = records.size();
   std::memcpy(&stage[indexOffset], &timeDelta, 4);
+
   indexOffset += 4;
-  int size = records.size();
+
   for(int i = 0; i < size; i++){
     std::memcpy(&stage[indexOffset], ((SensorRecord)records.top()).getData(), SensorRecord::SIZE_RECORD);
     records.pop();

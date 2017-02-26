@@ -58,22 +58,11 @@ void SensorServerService::readCallback(GattReadAuthCallbackParams *params){
   stageBeforeReadCallback();
   if (params->handle == stage_charac.getValueHandle()){
     stageBeforeReadCallback();
-    //    params->authorizationReply = true;
   }
 }
 
-/** 
- * 
- * 
- * @param params 
- */
+
 void SensorServerService::writeCallback(const GattWriteCallbackParams *params){
-  debugger->printf("WRITE CALLBACK\n\r");
-  if(stage_charac.isReadAuthorizationEnabled()){
-    debugger->printf("READ AUTH ENABLED");
-  } else {
-    debugger->printf("READ AUTH NOT ENABLED");
-  }
   if (params->handle == configuration_charac.getValueHandle()){
     uint16_t interval = 1;
     uint32_t threshold = 1;
