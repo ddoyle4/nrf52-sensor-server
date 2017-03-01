@@ -10,13 +10,13 @@ SensorController::SensorController(Serial *debug, EventQueue *queue) :
 SensorController::~SensorController(){}
 
 void SensorController::performMeasurement(int t){
-  debugger->printf("Performing measurement for: %d", t);
-  /*
-  sensors[0].eventID = 0;
+  //  debugger->printf("Performing measurement for: %d", t);
+  //  sensors[0].eventID = 0;
   sensorControl sensor = sensors[t];
-  float reading = sensor.sensor.read();
-  sensor.store->addReading(reading);
-  */
+  float reading = sensor.sensor->read();
+  //  sensor.store->addReading(reading);
+  debugger->printf("READING:%f\n\r", reading);
+
 }
 
 bool SensorController::addSensor(Sensor *_sensor, uint16_t interval, sensorType _type, PinName *_pins, int numPins){
@@ -42,7 +42,6 @@ bool SensorController::addSensor(Sensor *_sensor, uint16_t interval, sensorType 
   sensors[numActiveSensors].eventID = id;
 
   numActiveSensors++;
-  debugger->printf("finished adding sensor\n\r");
   return true;
 }
 

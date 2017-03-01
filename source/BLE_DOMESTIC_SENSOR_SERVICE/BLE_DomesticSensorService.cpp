@@ -8,10 +8,10 @@ DomesticSensorService::DomesticSensorService(BLE &ble, Serial *usbDebug, EventQu
   //would be cool if could detect automatically
   //TEMPERATURE SENSOR
   PinName *pins = new PinName[1];
+  pins[0] = p11;
   int numPins = 1;
   Sensor *newSensor = new DS18B20_TemperatureSensor(pins[0]);
   sensorController.addSensor(newSensor, (uint16_t)5, DS18B20_TEMPERATURE, pins, numPins);
-  debugger->printf("added here done \n\r");  
 
 }
 

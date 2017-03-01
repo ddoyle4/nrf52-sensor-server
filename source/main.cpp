@@ -93,9 +93,6 @@ int main()
    * in the services used. 
    */
 
-  usbDebug.printf("INITIALISING\n\r");
-
-
   set_time(1256729737);
 
 
