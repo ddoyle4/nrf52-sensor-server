@@ -8,7 +8,7 @@
 
 class DomesticSensorService : SensorServerService {
  public:
-  DomesticSensorService(BLE &ble, Serial *usbDebug);
+  DomesticSensorService(BLE &ble, Serial *usbDebug, EventQueue *eventQueue);
   ~DomesticSensorService();
   Serial * debugger;
 

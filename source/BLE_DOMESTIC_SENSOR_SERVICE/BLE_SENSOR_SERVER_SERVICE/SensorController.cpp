@@ -1,8 +1,9 @@
 #include "SensorController.h"
 
-SensorController::SensorController(Serial *debug) :
+SensorController::SensorController(Serial *debug, EventQueue *queue) :
   debugger(debug),
-  eventQueue(EventQueue(32*EVENTS_EVENT_SIZE)),
+  //  eventQueue(EventQueue(32*EVENTS_EVENT_SIZE)),
+  eventQueue(queue),
   numActiveSensors(0)
 {}
 
@@ -36,12 +37,12 @@ bool SensorController::addSensor(Sensor *_sensor, uint16_t interval, sensorType 
 
   //TODO add checking here - could become negative and nasty
   int ms_interval = (int)(interval*1000);
-  int id = eventQueue.call_every(ms_interval, this, &SensorController::performMeasurement, numActiveSensors);
+  int id = eventQueue->call_every(ms_interval, this, &SensorController::performMeasurement, numActiveSensors);
 
   sensors[numActiveSensors].eventID = id;
 
   numActiveSensors++;
-
+  debugger->printf("finished adding sensor\n\r");
   return true;
 }
 

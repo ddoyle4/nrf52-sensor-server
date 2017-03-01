@@ -6,16 +6,18 @@ uint8_t SensorServerService::configuration_data[CONFIGURATION_SIZE] = {0};
 uint8_t SensorServerService::stagingCommand_data[STAGINGCOMMAND_SIZE] = {0};
 uint8_t SensorServerService::stage_data[STAGE_SIZE] = {0};
 
-SensorServerService::SensorServerService(BLE &_ble, Serial *_debugger) :
+SensorServerService::SensorServerService(BLE &_ble, Serial *_debugger, EventQueue *eventQueue) :
   ble(_ble),
   debugger(_debugger),
+  sensorController(_debugger, eventQueue),
   metadata_charac(METADATA_UUID, metadata_data),
   liveRead_charac(LIVEREAD_UUID, liveRead_data),
   configuration_charac(CONFIGURATION_UUID, configuration_data),
   stagingCommand_charac(STAGINGCOMMAND_UUID, stagingCommand_data),
-  stage_charac(STAGE_UUID, stage_data),
-  sensorController(_debugger)
+  stage_charac(STAGE_UUID, stage_data)
 {
+
+  //set up BLE service
   GattCharacteristic *SSSChars[] = {&metadata_charac,
 				    &liveRead_charac,
 				    &configuration_charac,
@@ -26,6 +28,14 @@ SensorServerService::SensorServerService(BLE &_ble, Serial *_debugger) :
   ble.addService(SSSService);
   ble.gattServer().onDataWritten(this, &SensorServerService::writeCallback);
 
+  //set up sensors - TODO make this an automatic process based on attached sensors
+  //would be cool if could detect automatically
+  //TEMPERATURE SENSOR
+  //  PinName *pins = new PinName[1];
+  //  int numPins = 1;
+  //  Sensor *newSensor = new DS18B20_TemperatureSensor(pins[0]);
+  //  sensorController.addSensor(newSensor, (uint16_t)5, DS18B20_TEMPERATURE, pins, numPins);
+  //  debugger->printf("added here done \n\r");  
 }
 
 SensorServerService::~SensorServerService(){}

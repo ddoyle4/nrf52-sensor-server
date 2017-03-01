@@ -21,7 +21,7 @@ static const uint16_t uuid16_list[] = {0xFFFF};
 static DomesticSensorService *DSServicePtr;
 
 static EventQueue eventQueue(
-    /* event count */ 16 * /* event size */ 32
+    /* event count */ 32 * /* event size */ 32
 );
 
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
@@ -68,7 +68,7 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble.gap().onDisconnection(disconnectionCallback);
 
     /* Setup primary service. */
-    DSServicePtr = new DomesticSensorService(ble, &usbDebug);
+    DSServicePtr = new DomesticSensorService(ble, &usbDebug, &eventQueue);
 
     /* Setup advertising. */
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
@@ -92,6 +92,10 @@ int main()
    * the clock is set to some value so that relative time measurements can be made
    * in the services used. 
    */
+
+  usbDebug.printf("INITIALISING\n\r");
+
+
   set_time(1256729737);
 
 

@@ -1,9 +1,18 @@
 #include "BLE_DomesticSensorService.h"
 
-DomesticSensorService::DomesticSensorService(BLE &ble, Serial *usbDebug) :
-  SensorServerService(ble, usbDebug),
+DomesticSensorService::DomesticSensorService(BLE &ble, Serial *usbDebug, EventQueue *eventQueue) :
+  SensorServerService(ble, usbDebug, eventQueue),
   debugger(usbDebug)
 {
+  //set up sensors - TODO make this an automatic process based on attached sensors
+  //would be cool if could detect automatically
+  //TEMPERATURE SENSOR
+  PinName *pins = new PinName[1];
+  int numPins = 1;
+  Sensor *newSensor = new DS18B20_TemperatureSensor(pins[0]);
+  sensorController.addSensor(newSensor, (uint16_t)5, DS18B20_TEMPERATURE, pins, numPins);
+  debugger->printf("added here done \n\r");  
+
 }
 
 DomesticSensorService::~DomesticSensorService(){}

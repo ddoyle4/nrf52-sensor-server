@@ -28,13 +28,13 @@ class SensorController {
  public:
   static const int NUM_SENSOR_SLOTS = 8;
   static const int MAX_STORE_ALLOCATION = 2560;
-  SensorController(Serial *debug);
+  SensorController(Serial *debug, EventQueue *eventQueue);
   ~SensorController();
   bool addSensor(Sensor *sensor, uint16_t interval, sensorType _type, PinName *pins, int numPins);
 
  private:
-  EventQueue eventQueue;
   Serial *debugger;
+  EventQueue *eventQueue;
   void performMeasurement(int t);
   sensorControl sensors[NUM_SENSOR_SLOTS];
   int numActiveSensors;

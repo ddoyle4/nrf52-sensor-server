@@ -8,6 +8,8 @@
 #include "GattCharacteristic.h"
 #include "GattCallbackParamTypes.h"
 #include "SensorController.h"
+#include "Sensors/DS18B20_TemperatureSensor.h"
+#include "Sensors/Sensor.h"
 
 class SensorServerService {
  public:
@@ -23,7 +25,7 @@ class SensorServerService {
   static const unsigned int STAGE_SIZE = 500;
   static const uint16_t STAGE_UUID = 0xA005;
 
-  SensorServerService(BLE &ble, Serial * debugger);
+  SensorServerService(BLE &ble, Serial * debugger, EventQueue *eventQueue);
   ~SensorServerService();
 
 
@@ -53,6 +55,7 @@ class SensorServerService {
  protected:
   BLE &ble;
   Serial *debugger;
+  SensorController sensorController;
   
  private:
   static uint8_t metadata_data[METADATA_SIZE];
@@ -66,8 +69,6 @@ class SensorServerService {
   ReadWriteArrayGattCharacteristic<uint8_t, CONFIGURATION_SIZE> configuration_charac;
   ReadWriteArrayGattCharacteristic<uint8_t, STAGINGCOMMAND_SIZE> stagingCommand_charac;
   ReadOnlyArrayGattCharacteristic<uint8_t, STAGE_SIZE> stage_charac;
-
-  SensorController sensorController;
  
 };
 

@@ -5,7 +5,7 @@
 #include "DS1820/DS1820.h"
 #include "Sensor.h"
 
-class DS18B20_TemperatureSensor{
+class DS18B20_TemperatureSensor : public Sensor{
 
  public:
   DS18B20_TemperatureSensor(PinName pin);
@@ -14,7 +14,7 @@ class DS18B20_TemperatureSensor{
 
  private:
   PinName assignedPin;
-  DS1820 probe;
+  //  DS1820 probe;
 
 };
 
