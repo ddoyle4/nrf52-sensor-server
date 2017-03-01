@@ -13,7 +13,8 @@ SensorServerService::SensorServerService(BLE &_ble, Serial *_debugger) :
   liveRead_charac(LIVEREAD_UUID, liveRead_data),
   configuration_charac(CONFIGURATION_UUID, configuration_data),
   stagingCommand_charac(STAGINGCOMMAND_UUID, stagingCommand_data),
-  stage_charac(STAGE_UUID, stage_data)
+  stage_charac(STAGE_UUID, stage_data),
+  sensorController(_debugger)
 {
   GattCharacteristic *SSSChars[] = {&metadata_charac,
 				    &liveRead_charac,

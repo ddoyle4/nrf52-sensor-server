@@ -11,12 +11,12 @@
 class SensorStore {
 
  public:
-  static const unsigned STAGE_HEADER_SIZE = 4;
+  static const unsigned int STAGE_HEADER_SIZE = 8;
   SensorStore(int memorySize, int stageSize, uint16_t _measurementInterval);
   ~SensorStore();
   int getStoreSize();
   void addReading(float reading);
-  unsigned int flush(unsigned int oldest, unsigned int youngest);
+  unsigned int flush(unsigned int oldest, unsigned int youngest, uint8_t sensorID);
   const uint8_t * package() const;
   SensorRecord getRecord(int index);
   void printStore();
@@ -24,7 +24,12 @@ class SensorStore {
   int getStageSize();
   
  private:
-  void setStageData(std::stack<SensorRecord> records, unsigned int lastStageTimeDelta);
+  void setStageData(unsigned int start,
+		    std::stack<SensorRecord> records,
+		    unsigned int lastStageTimeDelta,
+		    uint8_t sensorID,
+		    bool missingFlag
+		    );
   unsigned int getOldestRealTimeDelta();
   void formatStage();
   int storeSize, top, bottom, memorySize, stageSize;

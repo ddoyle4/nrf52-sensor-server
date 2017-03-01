@@ -1,6 +1,7 @@
 #include "SensorController.h"
 
-SensorController::SensorController() :
+SensorController::SensorController(Serial *debug) :
+  debugger(debug),
   eventQueue(EventQueue(32*EVENTS_EVENT_SIZE)),
   numActiveSensors(0)
 {}
@@ -8,10 +9,16 @@ SensorController::SensorController() :
 SensorController::~SensorController(){}
 
 void SensorController::performMeasurement(int t){
+  debugger->printf("Performing measurement for: %d", t);
+  /*
   sensors[0].eventID = 0;
+  sensorControl sensor = sensors[t];
+  float reading = sensor.sensor.read();
+  sensor.store->addReading(reading);
+  */
 }
 
-bool SensorController::addSensor(Sensor _sensor, uint16_t interval, sensorType _type, PinName *_pins, int numPins){
+bool SensorController::addSensor(Sensor *_sensor, uint16_t interval, sensorType _type, PinName *_pins, int numPins){
   if(numActiveSensors > NUM_SENSOR_SLOTS){
     return false;
   }

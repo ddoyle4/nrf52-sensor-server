@@ -8,8 +8,8 @@ SensorStore::SensorStore(int _memorySize, int _stageSize, uint16_t interval) :
   top(0),
   bottom(0),
   memorySize(_memorySize),
-  measurementInterval(interval),
-  stageSize(_stageSize)
+  stageSize(_stageSize),
+  measurementInterval(interval)
 {
 
   /* Size of SensorRecord will determine how many readings can be stored*/
@@ -93,7 +93,11 @@ int SensorStore::getCurrentSize(){
  * 
  * @return the number of records that were written to the stage
  */
-unsigned int SensorStore::flush(unsigned int oldestTimeDelta, unsigned int youngestTimeDelta){
+unsigned int SensorStore::flush(unsigned int oldestTimeDelta, unsigned int youngestTimeDelta, uint8_t sensorID){
+
+  //check for space - in a perfect world this wouldn't be necessary
+  if(stageSize < (STAGE_HEADER_SIZE + SensorRecord::SIZE_RECORD)){ return 0; }
+  
   unsigned int
     index = bottom,
     relationalDelta,
@@ -101,33 +105,38 @@ unsigned int SensorStore::flush(unsigned int oldestTimeDelta, unsigned int young
     prevRealTimeDelta,
     accumulatedRelTime = 0,
     currentSize = 0,
-    maxReadingsSize = stageSize - STAGE_HEADER_SIZE - SensorRecord::SIZE_RECORD + 1;
+    maxReadingsSize = stageSize - STAGE_HEADER_SIZE - SensorRecord::SIZE_RECORD;
 
+  bool missedData = false; //flag - records missed due to space limitations - promps further calls
+  
   //real time delta of time pointed to by relational delta of store[bottom]
   prevRealTimeDelta = getOldestRealTimeDelta();
 
   SensorRecord currentRecord;     
   std::stack<SensorRecord> records;
 
+  
+  
   //find all relevant records
-  while(index < top){
+  while(index < top){ //TODO fix this - maybe make top and bottom unsigned ints
     currentRecord = getRecord(index%storeSize);
 
     //amount of time (secs) between this record and previous record
     relationalDelta = currentRecord.getTimeDelta()*measurementInterval;
-
+    
     //amount of time (secs) between now and when this record was stored
     realTimeDelta = prevRealTimeDelta - relationalDelta;
 
-    //stage record if there is space and it falls within time period
-    if( (currentSize < maxReadingsSize) &&
-	(realTimeDelta <= oldestTimeDelta) &&
-	(realTimeDelta >= youngestTimeDelta) ){
-
-      records.push(currentRecord);
-      currentSize += SensorRecord::SIZE_RECORD;
+    //is record is within desired period?
+    if( (realTimeDelta <= oldestTimeDelta) && (realTimeDelta >= youngestTimeDelta) ){
+      if( currentSize <= maxReadingsSize){ //is there space for this record?
+	records.push(currentRecord);
+	currentSize += SensorRecord::SIZE_RECORD;
+      } else {
+	missedData = true;
+      }
     }
-
+    
     // accumulate timeDelta to last appropriately staged reading
     if( (records.size() > 0) &&                                    
 	((realTimeDelta < youngestTimeDelta) ||
@@ -140,7 +149,7 @@ unsigned int SensorStore::flush(unsigned int oldestTimeDelta, unsigned int young
   }
 
   double timeDelta = difftime(time(NULL), lastReadingTime) + accumulatedRelTime + 0.5;
-  setStageData(records, (unsigned int)timeDelta);
+  setStageData(oldestTimeDelta, records, (unsigned int)timeDelta, sensorID, missedData);
   
   return records.size();
 }
@@ -167,12 +176,27 @@ unsigned int SensorStore::getOldestRealTimeDelta(){
   return (relationalTimeDelta * measurementInterval) + timeDelta;
 }
 
-void SensorStore::setStageData(std::stack<SensorRecord> records, unsigned int timeDelta){
+void SensorStore::setStageData(unsigned int start, std::stack<SensorRecord> records, unsigned int timeDelta, uint8_t sensorID, bool missing){
   std::cout << " -- " << records.size() << " " << timeDelta << std::endl; 
   int indexOffset = 0, size = records.size();
-  std::memcpy(&stage[indexOffset], &timeDelta, 4);
+  //set flags
+  uint8_t flagsAndSensorID = 0x00;
+  if(missing){
+    flagsAndSensorID = flagsAndSensorID | 0x80;
+  }
+  flagsAndSensorID = flagsAndSensorID | (sensorID & 0x0F);
+  stage[indexOffset++] = flagsAndSensorID;
 
+  //set starting time
+  std::memcpy(&stage[indexOffset], &start, 4);
   indexOffset += 4;
+
+  //set count
+  stage[indexOffset++] = (uint8_t)((records.size() > 255) ? 0xFF : (records.size() & 0xFF));
+
+  //set measurement interval
+  std::memcpy(&stage[indexOffset], &measurementInterval, 2);
+  indexOffset += 2;
 
   for(int i = 0; i < size; i++){
     std::memcpy(&stage[indexOffset], ((SensorRecord)records.top()).getData(), SensorRecord::SIZE_RECORD);

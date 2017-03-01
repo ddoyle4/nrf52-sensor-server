@@ -3,8 +3,9 @@
 
 #include "mbed.h"
 #include "DS1820/DS1820.h"
+#include "Sensor.h"
 
-class DS18B20_TemperatureSensor {
+class DS18B20_TemperatureSensor{
 
  public:
   DS18B20_TemperatureSensor(PinName pin);

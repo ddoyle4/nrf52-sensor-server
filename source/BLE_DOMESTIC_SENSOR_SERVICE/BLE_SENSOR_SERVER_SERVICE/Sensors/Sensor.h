@@ -7,7 +7,7 @@ class Sensor {
  public:
   Sensor();
   ~Sensor();
-  virtual float read();
+  virtual float read()=0;
 };
 
 #endif

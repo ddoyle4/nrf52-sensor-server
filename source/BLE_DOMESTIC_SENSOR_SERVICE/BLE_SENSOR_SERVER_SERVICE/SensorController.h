@@ -14,7 +14,7 @@ typedef enum sensorType {
 } sensorType;
 
 typedef struct sensorControl {
-  Sensor sensor;
+  Sensor *sensor;
   uint16_t measurementInterval;
   sensorType type;
   SensorStore *store;
@@ -28,12 +28,13 @@ class SensorController {
  public:
   static const int NUM_SENSOR_SLOTS = 8;
   static const int MAX_STORE_ALLOCATION = 2560;
-  SensorController();
+  SensorController(Serial *debug);
   ~SensorController();
-  bool addSensor(Sensor sensor, uint16_t interval, sensorType _type, PinName *pins, int numPins);
+  bool addSensor(Sensor *sensor, uint16_t interval, sensorType _type, PinName *pins, int numPins);
 
  private:
   EventQueue eventQueue;
+  Serial *debugger;
   void performMeasurement(int t);
   sensorControl sensors[NUM_SENSOR_SLOTS];
   int numActiveSensors;

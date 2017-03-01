@@ -8,9 +8,15 @@
 
 void printStoreHex(const uint8_t *store, int size){
 
-  printf("%x %x %x %x\n", store[0], store[1], store[2], store[3]);
+  printf("flags: %x | sensor id: %x\n", (store[0]&0xF0), (store[0] & 0x0F));
+  
+  printf("start time: %x %x %x %x\n", store[1], store[2], store[3], store[4]);
 
-  int index = 4;
+  printf("count: %x\n", store[5]);
+
+  printf("measurement interval: %x %x\n", store[6], store[7]);
+
+  int index = 8;
   
   for (int i = 0; i < size; i++){
     for (int j = 0; j < SensorRecord::SIZE_RECORD; j++){
@@ -23,7 +29,7 @@ void printStoreHex(const uint8_t *store, int size){
 
 int main(){
 
-  int memSize = 1024, stageSize = (512-12);
+  int memSize = 1024, stageSize = (14);
   uint16_t interval = 2;
   
   SensorStore testStore = SensorStore(memSize, stageSize, interval);
@@ -33,16 +39,19 @@ int main(){
   testStore.addReading(10.0);
   sleep(2*interval);                // + 4
 
-  
-  time_t timeBeforeAdding = time(NULL);
+
 
   testStore.addReading(10.0);
   sleep(2*interval);                // + 4
   testStore.addReading(11.0);       
   sleep(3*interval);                // + 6
+  time_t timeBeforeAdding = time(NULL);
   testStore.addReading(12.0);
 
   sleep(2*interval);
+  sleep(2*interval);
+
+
   time_t timeAfterAdding = time(NULL);
 
   std::cout << "size after adding: " << testStore.getCurrentSize() << std::endl;
@@ -59,7 +68,7 @@ int main(){
   unsigned int youngest = (unsigned int)difftime(time(NULL), timeAfterAdding);
   std::cout << "youngest: " << (youngest) << std::endl; // 0
 
-  unsigned int num = testStore.flush(oldest, youngest);
+  unsigned int num = testStore.flush(oldest, youngest, 0x01);
   std::cout << "numbder of records staged: " << num << std::endl;
   printStoreHex(testStore.package(), num);
 

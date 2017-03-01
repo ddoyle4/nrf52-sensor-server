@@ -7,6 +7,7 @@
 #include "mbed.h"
 #include "GattCharacteristic.h"
 #include "GattCallbackParamTypes.h"
+#include "SensorController.h"
 
 class SensorServerService {
  public:
@@ -65,7 +66,8 @@ class SensorServerService {
   ReadWriteArrayGattCharacteristic<uint8_t, CONFIGURATION_SIZE> configuration_charac;
   ReadWriteArrayGattCharacteristic<uint8_t, STAGINGCOMMAND_SIZE> stagingCommand_charac;
   ReadOnlyArrayGattCharacteristic<uint8_t, STAGE_SIZE> stage_charac;
-  
+
+  SensorController sensorController;
  
 };
 
