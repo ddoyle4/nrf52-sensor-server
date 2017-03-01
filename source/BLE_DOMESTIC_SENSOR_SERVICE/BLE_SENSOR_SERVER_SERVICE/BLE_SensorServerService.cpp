@@ -23,19 +23,12 @@ SensorServerService::SensorServerService(BLE &_ble, Serial *_debugger, EventQueu
 				    &configuration_charac,
 				    &stagingCommand_charac,
 				    &stage_charac};
-  stage_charac.setReadAuthorizationCallback(this, &SensorServerService::readCallback);
+  liveRead_charac.setReadAuthorizationCallback(this, &SensorServerService::liveReadCallback);
+  stage_charac.setReadAuthorizationCallback(this, &SensorServerService::stageReadCallback);
   GattService SSSService(SSS_UUID, SSSChars, sizeof(SSSChars) / sizeof(GattCharacteristic *));
   ble.addService(SSSService);
   ble.gattServer().onDataWritten(this, &SensorServerService::writeCallback);
 
-  //set up sensors - TODO make this an automatic process based on attached sensors
-  //would be cool if could detect automatically
-  //TEMPERATURE SENSOR
-  //  PinName *pins = new PinName[1];
-  //  int numPins = 1;
-  //  Sensor *newSensor = new DS18B20_TemperatureSensor(pins[0]);
-  //  sensorController.addSensor(newSensor, (uint16_t)5, DS18B20_TEMPERATURE, pins, numPins);
-  //  debugger->printf("added here done \n\r");  
 }
 
 SensorServerService::~SensorServerService(){}
@@ -59,17 +52,23 @@ void SensorServerService::metadataUpdateLiveliness(uint8_t newLiveliness){
   ble.gattServer().write(metadata_charac.getValueHandle(), metadata, METADATA_SIZE);
 }
 
-void SensorServerService::liveReadUpdate(uint8_t *newRead){
-  std::memcpy(liveRead_data, newRead, LIVEREAD_SIZE);
+void SensorServerService::liveReadUpdate(float reading, int sensorID){
+  int indexOffset = 4 * sensorID;
+  std::memcpy(&liveRead_data[indexOffset], &reading, 4);
   const uint8_t * liveRead = liveRead_data;
-  ble.gattServer().write(liveRead_charac.getValueHandle(), liveRead, LIVEREAD_SIZE);
+  ble.gattServer().write(liveRead_charac.getValueHandle(), liveRead, 4);
 }
 
-void SensorServerService::readCallback(GattReadAuthCallbackParams *params){
-  stageBeforeReadCallback();
-  if (params->handle == stage_charac.getValueHandle()){
-    stageBeforeReadCallback();
+void SensorServerService::liveReadCallback(GattReadAuthCallbackParams *params){
+  for(int i=0; i < sensorController.getNumSensors(); i++){
+    float reading = sensorController.getSensor(i)->read();
+    liveReadUpdate(reading, i);
   }
+  
+}
+
+void SensorServerService::stageReadCallback(GattReadAuthCallbackParams *params){
+  stageBeforeReadCallback();
 }
 
 

@@ -14,9 +14,8 @@ void SensorController::performMeasurement(int t){
   //  sensors[0].eventID = 0;
   sensorControl sensor = sensors[t];
   float reading = sensor.sensor->read();
-  //  sensor.store->addReading(reading);
-  debugger->printf("READING:%f\n\r", reading);
-
+  sensor.store->addReading(reading);
+  debugger->printf("READING:%f. STORE SIZE: %d\n\r", reading, sensor.store->getStoreSize());
 }
 
 bool SensorController::addSensor(Sensor *_sensor, uint16_t interval, sensorType _type, PinName *_pins, int numPins){

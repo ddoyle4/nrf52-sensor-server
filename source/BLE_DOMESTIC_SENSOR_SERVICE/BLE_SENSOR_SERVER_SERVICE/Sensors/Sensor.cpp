@@ -1,7 +1,10 @@
 #include "Sensor.h"
 
-Sensor::Sensor()
+Sensor::Sensor() :
+  lastReading(0)
 {}
 
 Sensor::~Sensor()
 {}
+
+float Sensor::getLastReading(){ return lastReading; }

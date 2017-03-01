@@ -16,7 +16,7 @@ class SensorServerService {
   static const uint16_t SSS_UUID = 0xA000;
   static const unsigned int METADATA_SIZE = 6;
   static const uint16_t METADATA_UUID = 0xA001;
-  static const unsigned int LIVEREAD_SIZE = 4;
+  static const unsigned int LIVEREAD_SIZE = 8*4;
   static const uint16_t LIVEREAD_UUID = 0xA002;
   static const unsigned int CONFIGURATION_SIZE = 6;
   static const uint16_t CONFIGURATION_UUID = 0xA003;
@@ -36,7 +36,7 @@ class SensorServerService {
   void metadataUpdateLiveliness(uint8_t newLiveliness);
 
   /* Live Read */
-  void liveReadUpdate(uint8_t * newRead);
+  void liveReadUpdate(float reading, int sensorID);
 
   /* Configuration */
   virtual void configurationWriteCallback(uint16_t interval, uint32_t threshold) =0;
@@ -50,7 +50,8 @@ class SensorServerService {
 
   /* Callback Functions */
   void writeCallback(const GattWriteCallbackParams * params);
-  void readCallback(GattReadAuthCallbackParams * params);
+  void stageReadCallback(GattReadAuthCallbackParams * params);
+  void liveReadCallback(GattReadAuthCallbackParams * params);
   
  protected:
   BLE &ble;

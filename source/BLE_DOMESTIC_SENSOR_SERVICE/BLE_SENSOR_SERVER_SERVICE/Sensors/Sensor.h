@@ -8,6 +8,9 @@ class Sensor {
   Sensor();
   ~Sensor();
   virtual float read()=0;
+  float getLastReading();
+ private:
+  float lastReading;
 };
 
 #endif
