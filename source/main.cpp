@@ -2,24 +2,26 @@
 #include <mbed.h>
 #include "ble/BLE.h"
 #include "ble/Gap.h"
-#include "BLE_DOMESTING_THERMOMETER_SERVICE/DS1820/DS1820.h"
-#include "BLE_DOMESTING_THERMOMETER_SERVICE/DomesticThermometerService.h"
+//#include "BLE_DOMESTING_THERMOMETER_SERVICE/DS1820/DS1820.h"
+//#include "BLE_DOMESTING_THERMOMETER_SERVICE/DomesticThermometerService.h"
+#include "BLE_DOMESTIC_SENSOR_SERVICE/BLE_DomesticSensorService.h"
 
 #define DATA_PIN p11
 
-DS1820 probe(DATA_PIN);
+//DS1820 probe(DATA_PIN);
 
 DigitalOut led1(LED1, 1);
+DigitalOut led2(LED2, 0);
 
 Serial usbDebug(USBTX, USBRX);
 
 const static char     DEVICE_NAME[] = "Domestic Thermometer";
 static const uint16_t uuid16_list[] = {0xFFFF};
 
-static DomesticThermometerService *dtServicePtr;
+static DomesticSensorService *DSServicePtr;
 
 static EventQueue eventQueue(
-    /* event count */ 16 * /* event size */ 32
+    /* event count */ 32 * /* event size */ 32
 );
 
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
@@ -28,15 +30,15 @@ void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
 }
 
 void updateSensorValue() {
-  probe.convertTemperature(true, DS1820::all_devices);
+  /*  probe.convertTemperature(true, DS1820::all_devices);
   float temp = probe.temperature();
   dtServicePtr->addTemperatureReading(temp);
-  dtServicePtr->flush();
+  dtServicePtr->flush();*/
 }
 
 void periodicCallback(void)
 {
-    led1 = !led1; /* Do blinky on LED1 while we're waiting for BLE events */
+  //    led1 = !led1; /* Do blinky on LED1 while we're waiting for BLE events */
 
     eventQueue.call(updateSensorValue);
 
@@ -66,7 +68,7 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble.gap().onDisconnection(disconnectionCallback);
 
     /* Setup primary service. */
-    dtServicePtr = new DomesticThermometerService(ble);
+    DSServicePtr = new DomesticSensorService(ble, &usbDebug, &eventQueue);
 
     /* Setup advertising. */
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
@@ -85,14 +87,23 @@ void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context)
 
 int main()
 {
-  usbDebug.printf("STARTING!! \n\r");
+  /*
+   * NOTE: Not setting any particularly important time here. Just ensuring that
+   * the clock is set to some value so that relative time measurements can be made
+   * in the services used. 
+   */
 
-  eventQueue.call_every(3000, periodicCallback);
+  set_time(1256729737);
+
+
+  //  eventQueue.call_every(3000, periodicCallback);
 
   BLE &ble = BLE::Instance();
   ble.onEventsToProcess(scheduleBleEventsProcessing);
   ble.init(bleInitComplete);
 
+
+  led2 = 1;
   eventQueue.dispatch_forever();
 
   return 0;
