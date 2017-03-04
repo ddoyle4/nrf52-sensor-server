@@ -87,23 +87,26 @@ void SensorServerService::writeCallback(const GattWriteCallbackParams *params){
 }
 
 void SensorServerService::flushStageData(unsigned int oldestLimit, unsigned int youngLimit, uint8_t sensor){
-  unsigned int sizeStage = sensorController.flushSenstore(oldestLimit, youngLimit, sensor);
-  ble.gattServer().write(stage_charac.getValueHandle, sensorController.getPackage(sensor), sizeStage);
+  unsigned int sizeStage = sensorController.flushSensorStore(oldestLimit, youngLimit, sensor);
+  ble.gattServer().write(stage_charac.getValueHandle(), sensorController.getPackage(sensor), sizeStage);
 }
 
-void SensorServerService::stageCommandHandler(uint8_t *data){
+void SensorServerService::stageCommandHandler(const uint8_t *data){
 
   switch(data[0]){
 
   case 0x00: //Stage Command
     unsigned int oldLimit, youngLimit;
+
     std::memcpy(&oldLimit, &data[1], sizeof(unsigned int));
     std::memcpy(&youngLimit, &data[5], sizeof(unsigned int));
+    debugger->printf("STAGE COMMAND: %d %d %d\n\r", oldLimit, youngLimit, data[9]);
     flushStageData(oldLimit, youngLimit, data[9]);
     break;
 
 
   default:
+    break;
   }
 }
 

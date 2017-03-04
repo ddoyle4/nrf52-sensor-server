@@ -15,7 +15,7 @@ void SensorController::performMeasurement(int t){
   sensorControl sensor = sensors[t];
   float reading = sensor.sensor->read();
   sensor.store->addReading(reading);
-  debugger->printf("READING:%f. STORE SIZE: %d\n\r", reading, sensor.store->getStoreSize());
+  //debugger->printf("READING:%f. STORE SIZE: %d\n\r", reading, sensor.store->getStoreSize());
 }
 
 bool SensorController::addSensor(Sensor *_sensor, uint16_t interval, sensorType _type, PinName *_pins, int numPins){
@@ -54,13 +54,13 @@ bool SensorController::addSensor(Sensor *_sensor, uint16_t interval, sensorType 
  * 
  * @return size of internal stage that was flushed 
  */
-unsigned int * SensorController::flushSensorStore(unsgined int oldLimit, unsigned int youngLimit, uint8_t sensor){
+unsigned int SensorController::flushSensorStore(unsigned int oldLimit, unsigned int youngLimit, uint8_t sensor){
   SensorStore * store = sensors[sensor].store;
   unsigned int numRecords = store->flush(oldLimit, youngLimit, sensor);
   return (numRecords * SensorStore::STAGE_RECORD_UNIT_SIZE) + SensorStore::STAGE_HEADER_SIZE;
 }
 
-const uint8_t * getPackage(uint8_t sensor) const{
+const uint8_t * SensorController::getPackage(uint8_t sensor) const{
   return sensors[sensor].store->package();
 }
 

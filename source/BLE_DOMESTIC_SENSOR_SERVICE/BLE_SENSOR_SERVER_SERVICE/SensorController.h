@@ -53,7 +53,7 @@ class SensorController {
   int getNumSensors(){ return numActiveSensors; }
   Sensor * getSensor(int sensorID){ return sensors[sensorID].sensor; }
   unsigned int flushSensorStore(unsigned int oldestLimit, unsigned int youngestLimit, uint8_t sensor);
-  const uint8_t * getPackage(uint8_t sensor);
+  const uint8_t * getPackage(uint8_t sensor) const;
   
  private:
   Serial *debugger;

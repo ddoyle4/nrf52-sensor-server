@@ -21,7 +21,7 @@ const uint8_t *SensorRecord::getData() const {
 
  
 void SensorRecord::print(){
-  std::cout << "RECORD:\t" << timeDelta << "\t" << reading;
+   std::cout << "RECORD:\t" << timeDelta << "\t" << reading;
 }
 
 uint16_t SensorRecord::getTimeDelta(){

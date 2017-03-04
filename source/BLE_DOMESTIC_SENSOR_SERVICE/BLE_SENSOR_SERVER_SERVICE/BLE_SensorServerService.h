@@ -74,7 +74,7 @@ class SensorServerService {
 
   /* NOTE: data will always be of length STAGE_COMMAND_SIZE. Any unused bytes at the end 
      are set to 0x00*/
-  void stageCommandHandler(uint8_t *data);
+  void stageCommandHandler(const uint8_t *data);
 };
 
 

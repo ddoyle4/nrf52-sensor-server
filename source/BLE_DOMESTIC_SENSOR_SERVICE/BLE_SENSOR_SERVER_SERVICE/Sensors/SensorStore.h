@@ -14,7 +14,7 @@ class SensorStore {
   //size of the stage header
   static const unsigned int STAGE_HEADER_SIZE = 8;
   //size of the repeating record unit (timeDelta + reading value)
-  static const unsgined int STAGE_RECORD_UNIT_SIZE = 6;
+  static const unsigned int STAGE_RECORD_UNIT_SIZE = 6;
   
   SensorStore(int memorySize, int stageSize, uint16_t _measurementInterval);
   ~SensorStore();
