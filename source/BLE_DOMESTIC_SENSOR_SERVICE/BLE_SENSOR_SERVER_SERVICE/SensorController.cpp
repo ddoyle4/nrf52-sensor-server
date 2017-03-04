@@ -44,9 +44,24 @@ bool SensorController::addSensor(Sensor *_sensor, uint16_t interval, sensorType 
   return true;
 }
 
-uint8_t * SensorController::flushSensorStore(unsgined int oldLimit, unsigned int youngLimit, uint8_t sensor){
-  unsigned int numFlushed = sensors[sensor].store->flush(oldLimit, youngLimit, sensor);
+/** 
+ * Flushes the sensor store of the sensor and creates 
+ * the appropriate header for the data in memory.
+ * 
+ * @param oldLimit oldest time limit to include records
+ * @param youngLimit youngest time limit to include records
+ * @param sensor index of the sensor
+ * 
+ * @return size of internal stage that was flushed 
+ */
+unsigned int * SensorController::flushSensorStore(unsgined int oldLimit, unsigned int youngLimit, uint8_t sensor){
+  SensorStore * store = sensors[sensor].store;
+  unsigned int numRecords = store->flush(oldLimit, youngLimit, sensor);
+  return (numRecords * SensorStore::STAGE_RECORD_UNIT_SIZE) + SensorStore::STAGE_HEADER_SIZE;
+}
 
+const uint8_t * getPackage(uint8_t sensor) const{
+  return sensors[sensor].store->package();
 }
 
 

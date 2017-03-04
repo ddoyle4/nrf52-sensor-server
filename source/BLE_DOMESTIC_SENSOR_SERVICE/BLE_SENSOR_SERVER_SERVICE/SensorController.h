@@ -1,3 +1,21 @@
+/*
+ * Sensor Controller
+ * Used to manage multiple sensors and their associated stores.
+ * There is a max number of sensor slots and the associated store
+ * of each sensor slot is given an equal share of the memory made
+ * available to this sensor controller.
+ *
+ * To get data from a sensor requires two steps:
+ *
+ *   step 1: call this.flushSensorStore(oldestTimeDelta, youngestTimeDelta, sensorIndex)
+ *           this will write all of the store's values to an internal stage, including header data,
+ *           and return the number of records that were written.
+ *   step 2: call this.getPackage(sensorIndex) this will return a pointer to that area in memory
+ *           containing the sensor's internal stage.
+ * 
+ *  TODO: perhaps better to just return a struct containing the number of records and a pointer to data.
+ */
+
 #ifndef __SENSOR_CONTROLLER_H__
 #define __SENSOR_CONTROLLER_H__
 
@@ -34,7 +52,8 @@ class SensorController {
   bool addSensor(Sensor *sensor, uint16_t interval, sensorType _type, PinName *pins, int numPins);
   int getNumSensors(){ return numActiveSensors; }
   Sensor * getSensor(int sensorID){ return sensors[sensorID].sensor; }
-  uint8_t * flushSensorStore(unsigned int oldestLimit, unsigned int youngestLimit, uint8_t sensor);
+  unsigned int flushSensorStore(unsigned int oldestLimit, unsigned int youngestLimit, uint8_t sensor);
+  const uint8_t * getPackage(uint8_t sensor);
   
  private:
   Serial *debugger;

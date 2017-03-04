@@ -86,6 +86,11 @@ void SensorServerService::writeCallback(const GattWriteCallbackParams *params){
   }
 }
 
+void SensorServerService::flushStageData(unsigned int oldestLimit, unsigned int youngLimit, uint8_t sensor){
+  unsigned int sizeStage = sensorController.flushSenstore(oldestLimit, youngLimit, sensor);
+  ble.gattServer().write(stage_charac.getValueHandle, sensorController.getPackage(sensor), sizeStage);
+}
+
 void SensorServerService::stageCommandHandler(uint8_t *data){
 
   switch(data[0]){
