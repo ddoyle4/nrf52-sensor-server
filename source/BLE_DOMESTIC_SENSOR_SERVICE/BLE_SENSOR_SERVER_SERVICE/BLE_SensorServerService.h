@@ -45,7 +45,8 @@ class SensorServerService {
   virtual void stagingCommandWriteCallback(const uint8_t * command) =0;
 
   /* Stage */
-  uint8_t * stageData() { return stage_data; }
+  uint8_t * getStageData() { return stage_data; }
+  void flushStageData(unsigned int oldestLimit, unsigned int youngestLimit, uint8_t sensor);
   virtual void stageBeforeReadCallback() =0;
 
   /* Callback Functions */
@@ -70,7 +71,10 @@ class SensorServerService {
   ReadWriteArrayGattCharacteristic<uint8_t, CONFIGURATION_SIZE> configuration_charac;
   ReadWriteArrayGattCharacteristic<uint8_t, STAGINGCOMMAND_SIZE> stagingCommand_charac;
   ReadOnlyArrayGattCharacteristic<uint8_t, STAGE_SIZE> stage_charac;
- 
+
+  /* NOTE: data will always be of length STAGE_COMMAND_SIZE. Any unused bytes at the end 
+     are set to 0x00*/
+  void stageCommandHandler(uint8_t *data);
 };
 
 

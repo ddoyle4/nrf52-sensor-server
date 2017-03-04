@@ -44,6 +44,11 @@ bool SensorController::addSensor(Sensor *_sensor, uint16_t interval, sensorType 
   return true;
 }
 
+uint8_t * SensorController::flushSensorStore(unsgined int oldLimit, unsigned int youngLimit, uint8_t sensor){
+  unsigned int numFlushed = sensors[sensor].store->flush(oldLimit, youngLimit, sensor);
+
+}
+
 
 
 

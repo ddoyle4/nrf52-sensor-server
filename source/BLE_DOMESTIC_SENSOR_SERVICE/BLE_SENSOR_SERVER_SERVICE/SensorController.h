@@ -34,6 +34,7 @@ class SensorController {
   bool addSensor(Sensor *sensor, uint16_t interval, sensorType _type, PinName *pins, int numPins);
   int getNumSensors(){ return numActiveSensors; }
   Sensor * getSensor(int sensorID){ return sensors[sensorID].sensor; }
+  uint8_t * flushSensorStore(unsigned int oldestLimit, unsigned int youngestLimit, uint8_t sensor);
   
  private:
   Serial *debugger;

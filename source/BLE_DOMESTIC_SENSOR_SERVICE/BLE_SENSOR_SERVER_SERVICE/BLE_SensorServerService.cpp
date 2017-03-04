@@ -79,7 +79,26 @@ void SensorServerService::writeCallback(const GattWriteCallbackParams *params){
 
     configurationWriteCallback(interval, threshold);
   } else if(params->handle == stagingCommand_charac.getValueHandle()){
+
+    stageCommandHandler(params->data);
+    //call virt func to allow derived class to perform any other required processing
     stagingCommandWriteCallback(params->data);
+  }
+}
+
+void SensorServerService::stageCommandHandler(uint8_t *data){
+
+  switch(data[0]){
+
+  case 0x00: //Stage Command
+    unsigned int oldLimit, youngLimit;
+    std::memcpy(&oldLimit, &data[1], sizeof(unsigned int));
+    std::memcpy(&youngLimit, &data[5], sizeof(unsigned int));
+    flushStageData(oldLimit, youngLimit, data[9]);
+    break;
+
+
+  default:
   }
 }
 
