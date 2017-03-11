@@ -81,14 +81,18 @@ void SensorServerService::metadataUpdateSensorType(uint8_t sensorID, uint8_t sen
   unsigned int typeOffset = 2;
   typeOffset = typeOffset + (sensorID / (uint8_t)2);
 
+  int test = (int)sensorType;
+  debugger->printf("type is %d\n\r", test);
   uint8_t metadataByte = metadata_data[typeOffset];
   
   if( sensorID % (uint8_t)2){
-    metadataByte = ((metadataByte) & 0x0F) || (sensorType << 4);
+    metadataByte = ((metadataByte) & 0xF0) | (sensorType & 0x0F);
   } else {
-    metadataByte = ((metadataByte) & 0xF0) || (sensorType & 0x0F);
+    metadataByte = ((metadataByte) & 0x0F) | (sensorType << 4);
   }
 
+  test = (int)metadataByte;
+  debugger->printf("byte is %d\n\r", test);
   metadata_data[typeOffset] = metadataByte;
   
   const uint8_t * metadata = metadata_data;
@@ -156,9 +160,11 @@ void SensorServerService::stageCommandHandler(const uint8_t *data){
 int SensorServerService::addSensor(Sensor *sensor, uint16_t interval, sensorType type, PinName *pins, int numPins){
 
   int newSensorID = sensorController.addSensor(sensor, interval, type, pins, numPins);
+
   //TODO tidy this up
   newSensorID = (newSensorID > 15) ? 15 : newSensorID;
-  if(newSensorID != -1){
+  if(newSensorID >= 0){
+    //debugger->printf("new sensor id = %d and type = %d", newSensorID, type);
     metadataUpdateSensorType((uint8_t)newSensorID, (uint8_t)type);
     return newSensorID;
   }

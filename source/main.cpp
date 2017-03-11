@@ -95,7 +95,7 @@ int main()
 
   set_time(1256729737);
 
-  usbDebug.printf("STARTED\n\r");
+  //  usbDebug.printf("STARTED\n\r");
 
   //  eventQueue.call_every(3000, periodicCallback);
 
