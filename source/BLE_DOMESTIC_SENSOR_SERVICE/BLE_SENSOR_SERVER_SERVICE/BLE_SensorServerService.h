@@ -14,7 +14,7 @@
 class SensorServerService {
  public:
   static const uint16_t SSS_UUID = 0xA000;
-  static const unsigned int METADATA_SIZE = 6;
+  static const unsigned int METADATA_SIZE = 22;
   static const uint16_t METADATA_UUID = 0xA001;
   static const unsigned int LIVEREAD_SIZE = 8*4;
   static const uint16_t LIVEREAD_UUID = 0xA002;
@@ -32,8 +32,9 @@ class SensorServerService {
   
   /* Metadata */
   void metadataFullCopy(uint8_t * newData);
-  void metadataUpdateCurrentBufferSize(uint16_t newSize);
-  void metadataUpdateLiveliness(uint8_t newLiveliness);
+  void metadataUpdateMaxBufferSize(uint16_t maxSize);
+  void metadataUpdateSensorBufferSize(uint16_t newSize, uint8_t sensorID);
+  void metadataUpdateSensorType(uint8_t sensorID, uint8_t sensorType);
 
   /* Live Read */
   void liveReadUpdate(float reading, int sensorID);
@@ -53,11 +54,14 @@ class SensorServerService {
   void writeCallback(const GattWriteCallbackParams * params);
   void stageReadCallback(GattReadAuthCallbackParams * params);
   void liveReadCallback(GattReadAuthCallbackParams * params);
+
+  int addSensor(Sensor *sensor, uint16_t interval, sensorType _type, PinName *pins, int numPins);
   
  protected:
   BLE &ble;
   Serial *debugger;
   SensorController sensorController;
+
   
  private:
   static uint8_t metadata_data[METADATA_SIZE];

@@ -26,9 +26,10 @@
 #include "mbed.h"
 
 typedef enum sensorType {
-  DS18B20_TEMPERATURE,
+  TEMPERATURE,
   RANGE_FINDER,
-  PRESSURE
+  PRESSURE,
+  NOT_A_SENSOR = 7
 } sensorType;
 
 typedef struct sensorControl {
@@ -49,11 +50,12 @@ class SensorController {
   SensorController(Serial *debug, EventQueue *eventQueue);
   ~SensorController();
   
-  bool addSensor(Sensor *sensor, uint16_t interval, sensorType _type, PinName *pins, int numPins);
+  int addSensor(Sensor *sensor, uint16_t interval, sensorType _type, PinName *pins, int numPins);
   int getNumSensors(){ return numActiveSensors; }
   Sensor * getSensor(int sensorID){ return sensors[sensorID].sensor; }
   unsigned int flushSensorStore(unsigned int oldestLimit, unsigned int youngestLimit, uint8_t sensor);
   const uint8_t * getPackage(uint8_t sensor) const;
+  uint16_t getMaxBufferSize();
   
  private:
   Serial *debugger;

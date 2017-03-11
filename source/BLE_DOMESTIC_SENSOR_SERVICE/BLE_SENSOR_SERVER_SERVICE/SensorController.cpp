@@ -18,9 +18,13 @@ void SensorController::performMeasurement(int t){
   //debugger->printf("READING:%f. STORE SIZE: %d\n\r", reading, sensor.store->getStoreSize());
 }
 
-bool SensorController::addSensor(Sensor *_sensor, uint16_t interval, sensorType _type, PinName *_pins, int numPins){
+uint16_t SensorController::getMaxBufferSize(){
+  return MAX_STORE_ALLOCATION/NUM_SENSOR_SLOTS;
+}
+
+int SensorController::addSensor(Sensor *_sensor, uint16_t interval, sensorType _type, PinName *_pins, int numPins){
   if(numActiveSensors > NUM_SENSOR_SLOTS){
-    return false;
+    return -1;
   }
   
   sensorControl newSensor;
@@ -41,7 +45,8 @@ bool SensorController::addSensor(Sensor *_sensor, uint16_t interval, sensorType 
   sensors[numActiveSensors].eventID = id;
 
   numActiveSensors++;
-  return true;
+  
+  return (numActiveSensors - 1);
 }
 
 /** 
