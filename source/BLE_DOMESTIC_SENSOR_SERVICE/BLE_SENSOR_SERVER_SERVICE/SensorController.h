@@ -53,6 +53,7 @@ class SensorController {
   int addSensor(Sensor *sensor, uint16_t interval, sensorType _type, PinName *pins, int numPins);
   int getNumSensors(){ return numActiveSensors; }
   Sensor * getSensor(int sensorID){ return sensors[sensorID].sensor; }
+  SensorStore * getSensorStore(int sensorID){ return sensors[sensorID].store; }
   unsigned int flushSensorStore(unsigned int oldestLimit, unsigned int youngestLimit, uint8_t sensor);
   const uint8_t * getPackage(uint8_t sensor) const;
   uint16_t getMaxBufferSize();

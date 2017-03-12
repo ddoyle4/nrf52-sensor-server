@@ -35,10 +35,11 @@ SensorServerService::SensorServerService(BLE &_ble, Serial *_debugger, EventQueu
 				    &stagingCommand_charac,
 				    &stage_charac};
 
-  // Called before stage read is allowed to proceed
-  liveRead_charac.setReadAuthorizationCallback(this, &SensorServerService::liveReadCallback);
-  
+  // Read Authorisation callbacks
+  metadata_charac.setReadAuthorizationCallback(this, &SensorServerService::metadataCallback);
+  liveRead_charac.setReadAuthorizationCallback(this, &SensorServerService::liveReadCallback);  
   stage_charac.setReadAuthorizationCallback(this, &SensorServerService::stageReadCallback);
+  
   GattService SSSService(SSS_UUID, SSSChars, sizeof(SSSChars) / sizeof(GattCharacteristic *));
   ble.addService(SSSService);
 
@@ -66,7 +67,7 @@ void SensorServerService::metadataUpdateMaxBufferSize(uint16_t maxBuffer){
 void SensorServerService::metadataUpdateSensorBufferSize(uint16_t newSize, uint8_t sensorID){
   unsigned int sizeOffset = 6, sizeLength = 2;
   sizeOffset = sizeOffset + (sizeLength * sensorID);
-  std::memcpy(&metadata_data, &newSize, sizeof(uint16_t));
+  std::memcpy(&metadata_data[sizeOffset], &newSize, sizeof(uint16_t));
   const uint8_t * metadata = metadata_data;
   ble.gattServer().write(metadata_charac.getValueHandle(), metadata, METADATA_SIZE);
 }
@@ -81,8 +82,6 @@ void SensorServerService::metadataUpdateSensorType(uint8_t sensorID, uint8_t sen
   unsigned int typeOffset = 2;
   typeOffset = typeOffset + (sensorID / (uint8_t)2);
 
-  int test = (int)sensorType;
-  debugger->printf("type is %d\n\r", test);
   uint8_t metadataByte = metadata_data[typeOffset];
   
   if( sensorID % (uint8_t)2){
@@ -91,12 +90,18 @@ void SensorServerService::metadataUpdateSensorType(uint8_t sensorID, uint8_t sen
     metadataByte = ((metadataByte) & 0x0F) | (sensorType << 4);
   }
 
-  test = (int)metadataByte;
-  debugger->printf("byte is %d\n\r", test);
   metadata_data[typeOffset] = metadataByte;
   
   const uint8_t * metadata = metadata_data;
   ble.gattServer().write(metadata_charac.getValueHandle(), metadata, METADATA_SIZE);
+}
+
+void SensorServerService::metadataCallback(GattReadAuthCallbackParams *params){
+  for(int i=0; i < sensorController.getNumSensors(); i++){
+    int size = sensorController.getSensorStore(i)->getCurrentSize();
+    uint16_t updateSize = (size > 65536) ? 0xFFFF : (uint16_t)size;
+    metadataUpdateSensorBufferSize(updateSize, (uint8_t)i);
+  }
 }
 
 void SensorServerService::liveReadUpdate(float reading, int sensorID){
@@ -111,10 +116,10 @@ void SensorServerService::liveReadCallback(GattReadAuthCallbackParams *params){
     float reading = sensorController.getSensor(i)->read();
     liveReadUpdate(reading, i);
   }
-  
 }
 
 void SensorServerService::stageReadCallback(GattReadAuthCallbackParams *params){
+  //TODO check bool return status and yay/nay the read for that
   stageBeforeReadCallback();
 }
 
@@ -141,7 +146,6 @@ void SensorServerService::flushStageData(unsigned int oldestLimit, unsigned int 
 void SensorServerService::stageCommandHandler(const uint8_t *data){
 
   switch(data[0]){
-
   case 0x00: //Stage Command
     unsigned int oldLimit, youngLimit;
 
@@ -150,8 +154,6 @@ void SensorServerService::stageCommandHandler(const uint8_t *data){
     debugger->printf("STAGE COMMAND: %d %d %d\n\r", oldLimit, youngLimit, data[9]);
     flushStageData(oldLimit, youngLimit, data[9]);
     break;
-
-
   default:
     break;
   }

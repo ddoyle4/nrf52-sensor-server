@@ -27,8 +27,6 @@ class SensorServerService {
 
   SensorServerService(BLE &ble, Serial * debugger, EventQueue *eventQueue);
   ~SensorServerService();
-
-
   
   /* Metadata */
   void metadataFullCopy(uint8_t * newData);
@@ -54,6 +52,7 @@ class SensorServerService {
   void writeCallback(const GattWriteCallbackParams * params);
   void stageReadCallback(GattReadAuthCallbackParams * params);
   void liveReadCallback(GattReadAuthCallbackParams * params);
+  void metadataCallback(GattReadAuthCallbackParams * params);
 
   int addSensor(Sensor *sensor, uint16_t interval, sensorType _type, PinName *pins, int numPins);
   
