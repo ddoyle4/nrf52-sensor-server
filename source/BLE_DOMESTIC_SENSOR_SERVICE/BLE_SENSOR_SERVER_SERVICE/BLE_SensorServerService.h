@@ -18,7 +18,7 @@ class SensorServerService {
   static const uint16_t METADATA_UUID = 0xA001;
   static const unsigned int LIVEREAD_SIZE = 8*4;
   static const uint16_t LIVEREAD_UUID = 0xA002;
-  static const unsigned int CONFIGURATION_SIZE = 6;
+  static const unsigned int CONFIGURATION_SIZE = 48;
   static const uint16_t CONFIGURATION_UUID = 0xA003;
   static const unsigned int STAGINGCOMMAND_SIZE = 12;
   static const uint16_t STAGINGCOMMAND_UUID = 0xA004;
@@ -54,7 +54,7 @@ class SensorServerService {
   void liveReadCallback(GattReadAuthCallbackParams * params);
   void metadataCallback(GattReadAuthCallbackParams * params);
 
-  int addSensor(Sensor *sensor, uint16_t interval, sensorType _type, PinName *pins, int numPins);
+  int addSensor(Sensor *sensor, uint16_t interval, float threshold, sensorType _type, PinName *pins, int numPins);
   
  protected:
   BLE &ble;
@@ -71,13 +71,14 @@ class SensorServerService {
 
   ReadOnlyArrayGattCharacteristic<uint8_t, METADATA_SIZE> metadata_charac;
   ReadOnlyArrayGattCharacteristic<uint8_t, LIVEREAD_SIZE> liveRead_charac;
-  ReadWriteArrayGattCharacteristic<uint8_t, CONFIGURATION_SIZE> configuration_charac;
+  ReadOnlyArrayGattCharacteristic<uint8_t, CONFIGURATION_SIZE> configuration_charac;
   ReadWriteArrayGattCharacteristic<uint8_t, STAGINGCOMMAND_SIZE> stagingCommand_charac;
   ReadOnlyArrayGattCharacteristic<uint8_t, STAGE_SIZE> stage_charac;
 
   /* NOTE: data will always be of length STAGE_COMMAND_SIZE. Any unused bytes at the end 
      are set to 0x00*/
   void stageCommandHandler(const uint8_t *data);
+  void configUpdate(uint8_t sensorID, uint16_t interval, float threshold);
 };
 
 

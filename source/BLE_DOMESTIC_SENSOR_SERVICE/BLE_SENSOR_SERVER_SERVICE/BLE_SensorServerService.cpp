@@ -85,9 +85,9 @@ void SensorServerService::metadataUpdateSensorType(uint8_t sensorID, uint8_t sen
   uint8_t metadataByte = metadata_data[typeOffset];
   
   if( sensorID % (uint8_t)2){
-    metadataByte = ((metadataByte) & 0xF0) | (sensorType & 0x0F);
-  } else {
     metadataByte = ((metadataByte) & 0x0F) | (sensorType << 4);
+  } else {
+    metadataByte = ((metadataByte) & 0xF0) | (sensorType & 0x0F);
   }
 
   metadata_data[typeOffset] = metadataByte;
@@ -108,7 +108,7 @@ void SensorServerService::liveReadUpdate(float reading, int sensorID){
   int indexOffset = 4 * sensorID;
   std::memcpy(&liveRead_data[indexOffset], &reading, 4);
   const uint8_t * liveRead = liveRead_data;
-  ble.gattServer().write(liveRead_charac.getValueHandle(), liveRead, 4);
+  ble.gattServer().write(liveRead_charac.getValueHandle(), liveRead, LIVEREAD_SIZE);
 }
 
 void SensorServerService::liveReadCallback(GattReadAuthCallbackParams *params){
@@ -118,6 +118,14 @@ void SensorServerService::liveReadCallback(GattReadAuthCallbackParams *params){
   }
 }
 
+void SensorServerService::configUpdate(uint8_t sensorID, uint16_t interval, float threshold){
+  int indexOffset = 6 * sensorID;
+  std::memcpy(&configuration_data[indexOffset], &interval, sizeof(uint16_t));
+  std::memcpy(&configuration_data[indexOffset+2], &threshold, sizeof(float));
+  const uint8_t * config = configuration_data;
+  ble.gattServer().write(configuration_charac.getValueHandle(), config, CONFIGURATION_SIZE);
+}
+
 void SensorServerService::stageReadCallback(GattReadAuthCallbackParams *params){
   //TODO check bool return status and yay/nay the read for that
   stageBeforeReadCallback();
@@ -125,22 +133,15 @@ void SensorServerService::stageReadCallback(GattReadAuthCallbackParams *params){
 
 
 void SensorServerService::writeCallback(const GattWriteCallbackParams *params){
-  if (params->handle == configuration_charac.getValueHandle()){
-    uint16_t interval = 1;
-    uint32_t threshold = 1;
-
-    configurationWriteCallback(interval, threshold);
-  } else if(params->handle == stagingCommand_charac.getValueHandle()){
-
+  if(params->handle == stagingCommand_charac.getValueHandle()){ 
     stageCommandHandler(params->data);
-    //call virt func to allow derived class to perform any other required processing
     stagingCommandWriteCallback(params->data);
   }
 }
 
 void SensorServerService::flushStageData(unsigned int oldestLimit, unsigned int youngLimit, uint8_t sensor){
   unsigned int sizeStage = sensorController.flushSensorStore(oldestLimit, youngLimit, sensor);
-  ble.gattServer().write(stage_charac.getValueHandle(), sensorController.getPackage(sensor), sizeStage);
+  ble.gattServer().write(stage_charac.getValueHandle(), sensorController.getPackage(sensor), STAGE_SIZE);
 }
 
 void SensorServerService::stageCommandHandler(const uint8_t *data){
@@ -151,23 +152,31 @@ void SensorServerService::stageCommandHandler(const uint8_t *data){
 
     std::memcpy(&oldLimit, &data[1], sizeof(unsigned int));
     std::memcpy(&youngLimit, &data[5], sizeof(unsigned int));
-    debugger->printf("STAGE COMMAND: %d %d %d\n\r", oldLimit, youngLimit, data[9]);
+
     flushStageData(oldLimit, youngLimit, data[9]);
+    break;
+  case 0x10: //Update config
+    uint16_t newInterval;
+    float newThreshold;
+    
+    std::memcpy(&newInterval, &data[2], sizeof(uint16_t));
+    std::memcpy(&newThreshold, &data[4], sizeof(float));
+    
+    configUpdate(data[1], newInterval, newThreshold);
     break;
   default:
     break;
   }
 }
 
-int SensorServerService::addSensor(Sensor *sensor, uint16_t interval, sensorType type, PinName *pins, int numPins){
-
+int SensorServerService::addSensor(Sensor *sensor, uint16_t interval, float threshold, sensorType type, PinName *pins, int numPins){
   int newSensorID = sensorController.addSensor(sensor, interval, type, pins, numPins);
-
   //TODO tidy this up
   newSensorID = (newSensorID > 15) ? 15 : newSensorID;
   if(newSensorID >= 0){
-    //debugger->printf("new sensor id = %d and type = %d", newSensorID, type);
     metadataUpdateSensorType((uint8_t)newSensorID, (uint8_t)type);
+    configUpdate((uint8_t)newSensorID, interval, threshold);
+      
     return newSensorID;
   }
 
