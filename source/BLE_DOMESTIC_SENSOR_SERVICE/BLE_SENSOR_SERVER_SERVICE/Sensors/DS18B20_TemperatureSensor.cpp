@@ -16,6 +16,20 @@ DS18B20_TemperatureSensor::~DS18B20_TemperatureSensor()
 
 float DS18B20_TemperatureSensor::read(){
   probe.convertTemperature(true, DS1820::all_devices);
-  return probe.temperature();
-    
+  int retry = SANITY_RETRY;
+  float reading = probe.temperature();
+
+  while(!isSane(reading) && retry > 0){
+    wait_ms(100);
+    reading = probe.temperature();
+    retry--;
+  }
+
+  if(!isSane(reading)){ return SANITY_FAIL_VALUE; }
+
+  return reading;
+}
+
+bool DS18B20_TemperatureSensor::isSane(float reading){
+  return (reading < SANITY_MAX_VALUE) && (reading > SANITY_MIN_VALUE);
 }

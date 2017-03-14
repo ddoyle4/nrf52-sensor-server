@@ -21,7 +21,7 @@ uint8_t SensorServerService::stage_data[STAGE_SIZE] = {0};
 SensorServerService::SensorServerService(BLE &_ble, Serial *_debugger, EventQueue *eventQueue) :
   ble(_ble),
   debugger(_debugger),
-  sensorController(_debugger, eventQueue),
+  sensorController(_debugger, eventQueue, STAGE_SIZE),
   metadata_charac(METADATA_UUID, metadata_data),
   liveRead_charac(LIVEREAD_UUID, liveRead_data),
   configuration_charac(CONFIGURATION_UUID, configuration_data),
@@ -129,6 +129,9 @@ void SensorServerService::configUpdate(uint8_t sensorID, uint16_t interval, floa
 
 void SensorServerService::stageReadCallback(GattReadAuthCallbackParams *params){
   //TODO check bool return status and yay/nay the read for that
+  sensorController.updateStageStartTime();
+  // TODO maybe try to index this a little better like only write the start time, is this possible?
+  ble.gattServer().write(stage_charac.getValueHandle(), sensorController.getPackage(), STAGE_SIZE);
   stageBeforeReadCallback();
 }
 
@@ -142,7 +145,7 @@ void SensorServerService::writeCallback(const GattWriteCallbackParams *params){
 
 void SensorServerService::flushStageData(unsigned int oldestLimit, unsigned int youngLimit, uint8_t sensor){
   sensorController.flushSensorStore(oldestLimit, youngLimit, sensor);
-  ble.gattServer().write(stage_charac.getValueHandle(), sensorController.getPackage(sensor), STAGE_SIZE);
+  ble.gattServer().write(stage_charac.getValueHandle(), sensorController.getPackage(), STAGE_SIZE);
 }
 
 void SensorServerService::stageCommandHandler(const uint8_t *data){
@@ -170,6 +173,13 @@ void SensorServerService::stageCommandHandler(const uint8_t *data){
   }
 }
 
+void SensorServerService::configUpdateHandler(uint8_t sensorID, uint16_t interval, float threshold){
+  sensorController.getSensorStore(sensorID)->setThreshold(threshold);
+
+  //update config characteristic
+  configUpdate(sensorID, interval, threshold);
+}
+
 int SensorServerService::addSensor(Sensor *sensor, uint16_t interval, float threshold, sensorType type, PinName *pins, int numPins, int memSize){
   int newSensorID = sensorController.addSensor(sensor, interval, threshold, type, pins, numPins, memSize);
   //TODO tidy this up
@@ -185,9 +195,3 @@ int SensorServerService::addSensor(Sensor *sensor, uint16_t interval, float thre
   return -1;
 }
 
-void SensorServerService::configUpdateHandler(uint8_t sensorID, uint16_t interval, float threshold){
-  sensorController.getSensorStore(sensorID)->setThreshold(threshold);
-
-  //update config characteristic
-  configUpdate(sensorID, interval, threshold);
-}

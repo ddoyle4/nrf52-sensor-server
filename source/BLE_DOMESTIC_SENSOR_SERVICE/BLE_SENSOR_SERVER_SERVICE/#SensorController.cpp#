@@ -84,6 +84,7 @@ const uint8_t * SensorController::getPackage() const{
 void SensorController::updateStageStartTime(){
   unsigned int startTime;
   std::memcpy(&startTime, &stage[STAGE_START_TIME_OFFSET], sizeof(unsigned int));
+  
 }
 
 

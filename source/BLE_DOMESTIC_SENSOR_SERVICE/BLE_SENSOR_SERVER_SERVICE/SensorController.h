@@ -47,7 +47,9 @@ class SensorController {
  public:
   static const int NUM_SENSOR_SLOTS = 8;
   static const int MAX_STORE_ALLOCATION = 2560;
-  SensorController(Serial *debug, EventQueue *eventQueue);
+  static const int STAGE_START_TIME_OFFSET = 1;
+  
+  SensorController(Serial *debug, EventQueue *eventQueue, int stageSize);
   ~SensorController();
   
   int addSensor(Sensor *sensor, uint16_t interval, float threshold, sensorType _type, PinName *pins, int numPins, int memSize);
@@ -55,8 +57,9 @@ class SensorController {
   Sensor * getSensor(int sensorID){ return sensors[sensorID].sensor; }
   SensorStore * getSensorStore(int sensorID){ return sensors[sensorID].store; }
   unsigned int flushSensorStore(unsigned int oldestLimit, unsigned int youngestLimit, uint8_t sensor);
-  const uint8_t * getPackage(uint8_t sensor) const;
+  const uint8_t * getPackage() const;
   uint16_t getMaxBufferSize();
+  void updateStageStartTime();
   
  private:
   Serial *debugger;
@@ -65,6 +68,9 @@ class SensorController {
   sensorControl sensors[NUM_SENSOR_SLOTS];
   int numActiveSensors;
   int currentStoreAllocation;
+  int stageSize;
+  uint8_t * stage;
+  time_t lastStageFlushTime;
 };
 
 #endif

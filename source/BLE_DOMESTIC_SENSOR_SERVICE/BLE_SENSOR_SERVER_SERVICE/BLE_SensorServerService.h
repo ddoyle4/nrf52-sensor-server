@@ -22,7 +22,7 @@ class SensorServerService {
   static const uint16_t CONFIGURATION_UUID = 0xA003;
   static const unsigned int STAGINGCOMMAND_SIZE = 12;
   static const uint16_t STAGINGCOMMAND_UUID = 0xA004;
-  static const unsigned int STAGE_SIZE = 500;
+  static const unsigned int STAGE_SIZE = 512;
   static const uint16_t STAGE_UUID = 0xA005;
 
   SensorServerService(BLE &ble, Serial * debugger, EventQueue *eventQueue);
@@ -79,7 +79,6 @@ class SensorServerService {
   /* NOTE: data will always be of length STAGE_COMMAND_SIZE. Any unused bytes at the end 
      are set to 0x00*/
   void stageCommandHandler(const uint8_t *data);
-
   void configUpdateHandler(uint8_t sensorID, uint16_t interval, float threshold);
 };
 

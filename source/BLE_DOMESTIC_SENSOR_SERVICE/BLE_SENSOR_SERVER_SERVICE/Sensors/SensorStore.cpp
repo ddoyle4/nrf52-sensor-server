@@ -4,11 +4,10 @@
 
 time_t SensorStore::lastReadingTime = 0;
 
-SensorStore::SensorStore(int _memorySize, int _stageSize, uint16_t interval, float _threshold) :
+SensorStore::SensorStore(int _memorySize, uint16_t interval, float _threshold) :
   top(0),
   bottom(0),
   memorySize(_memorySize),
-  stageSize(_stageSize),
   measurementInterval(interval),
   threshold(_threshold)
 {
@@ -18,31 +17,20 @@ SensorStore::SensorStore(int _memorySize, int _stageSize, uint16_t interval, flo
   
   //IMPORTANT NOTE: look into using mbed_ualloc() instead - https://docs.mbed.com/docs/getting-started-mbed-os/en/latest/Full_Guide/memory/#memory-allocation-in-mbed-os
   store = (SensorRecord *) malloc(sizeof(SensorRecord) * storeSize);
-
-  //Area in memory where records will be written to so they can easily be written
-  //to the gatt server.
-  stage = (uint8_t *) malloc(sizeof(uint8_t) * stageSize);
-
-  formatStage();
 }
 
-void SensorStore::formatStage(){
-  for(int i = 0; i < stageSize; i++){
+void SensorStore::formatStage(uint8_t * stage, int size){
+  for(int i = 0; i < size; i++){
     stage[i] = 0x00;
   }
 }
 
 SensorStore::~SensorStore(){
   free(store);
-  free(stage);
 }
 
 int SensorStore::getStoreSize(){
   return storeSize;
-}
-
-int SensorStore::getStageSize(){
-  return stageSize;
 }
 
 //when adding threshold, consider adding a record even if within
@@ -103,7 +91,7 @@ int SensorStore::getCurrentSize(){
  * 
  * @return the number of records that were written to the stage
  */
-unsigned int SensorStore::flush(unsigned int oldestTimeDelta, unsigned int youngestTimeDelta, uint8_t sensorID){
+unsigned int SensorStore::flush(uint8_t *stage, unsigned int oldestTimeDelta, unsigned int youngestTimeDelta, uint8_t sensorID, int stageSize){
 
   //check for space - in a perfect world this wouldn't be necessary
   if(stageSize < (STAGE_HEADER_SIZE + SensorRecord::SIZE_RECORD)){ return 0; }
@@ -159,7 +147,7 @@ unsigned int SensorStore::flush(unsigned int oldestTimeDelta, unsigned int young
   }
 
   double timeDelta = difftime(time(NULL), lastReadingTime) + accumulatedRelTime + 0.5;
-  setStageData(oldestTimeDelta, records, (unsigned int)timeDelta, sensorID, missedData);
+  setStageData(stage, oldestTimeDelta, records, (unsigned int)timeDelta, sensorID, missedData);
   
   return records.size();
 }
@@ -186,7 +174,7 @@ unsigned int SensorStore::getOldestRealTimeDelta(){
   return (relationalTimeDelta * measurementInterval) + timeDelta;
 }
 
-void SensorStore::setStageData(unsigned int start, std::stack<SensorRecord> records, unsigned int timeDelta, uint8_t sensorID, bool missing){
+void SensorStore::setStageData(uint8_t *stage, unsigned int start, std::stack<SensorRecord> records, unsigned int timeDelta, uint8_t sensorID, bool missing){
   std::cout << " -- " << records.size() << " " << timeDelta << std::endl; 
   int indexOffset = 0, size = records.size();
   //set flags
@@ -215,9 +203,6 @@ void SensorStore::setStageData(unsigned int start, std::stack<SensorRecord> reco
   }
 }
 
-const uint8_t * SensorStore::package() const {
-  return stage;
-}
 
 /** 
  * Returns a specified number of records, starting
