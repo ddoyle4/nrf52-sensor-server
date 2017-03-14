@@ -5,6 +5,7 @@
 //#include "mbed.h"
 #include <stdint.h>
 #include <cstring>
+#include <cmath>
 #include <stack>
 #include <time.h>
 
@@ -16,7 +17,7 @@ class SensorStore {
   //size of the repeating record unit (timeDelta + reading value)
   static const unsigned int STAGE_RECORD_UNIT_SIZE = 6;
   
-  SensorStore(int memorySize, int stageSize, uint16_t _measurementInterval);
+  SensorStore(int memorySize, int stageSize, uint16_t _measurementInterval, float _threshold);
   ~SensorStore();
   int getStoreSize();
   void addReading(float reading);
@@ -26,6 +27,8 @@ class SensorStore {
   void printStore();
   int getCurrentSize();
   int getStageSize();
+  float getThreshold(){ return threshold; };
+  void setThreshold(float _threshold){ threshold = _threshold; };
   
  private:
   void setStageData(unsigned int start,
@@ -40,12 +43,8 @@ class SensorStore {
   SensorRecord * store;
   uint8_t * stage;
   uint16_t measurementInterval;
+  float threshold;
   static time_t lastReadingTime;
 };
-
-
-
-
-
 
 #endif

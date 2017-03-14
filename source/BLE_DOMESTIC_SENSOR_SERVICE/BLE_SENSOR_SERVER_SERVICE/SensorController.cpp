@@ -4,7 +4,8 @@ SensorController::SensorController(Serial *debug, EventQueue *queue) :
   debugger(debug),
   //  eventQueue(EventQueue(32*EVENTS_EVENT_SIZE)),
   eventQueue(queue),
-  numActiveSensors(0)
+  numActiveSensors(0),
+  currentStoreAllocation(0)
 {}
 
 SensorController::~SensorController(){}
@@ -22,16 +23,18 @@ uint16_t SensorController::getMaxBufferSize(){
   return MAX_STORE_ALLOCATION/NUM_SENSOR_SLOTS;
 }
 
-int SensorController::addSensor(Sensor *_sensor, uint16_t interval, sensorType _type, PinName *_pins, int numPins){
-  if(numActiveSensors > NUM_SENSOR_SLOTS){
+int SensorController::addSensor(Sensor *_sensor, uint16_t interval, float threshold, sensorType _type, PinName *_pins, int numPins, int memSize){
+  if( ((memSize + currentStoreAllocation) > MAX_STORE_ALLOCATION) || numActiveSensors >= NUM_SENSOR_SLOTS){
     return -1;
   }
+
+  currentStoreAllocation += memSize;
   
   sensorControl newSensor;
   newSensor.sensor = _sensor;
   newSensor.measurementInterval = interval;
   newSensor.type = _type;
-  newSensor.store = new SensorStore((MAX_STORE_ALLOCATION/NUM_SENSOR_SLOTS), 512, interval);
+  newSensor.store = new SensorStore(memSize, 512, interval, threshold);
   newSensor.pins = _pins;
   newSensor.numAllocatedPins = numPins;
   newSensor.eventID = 0; //this is set correctly below

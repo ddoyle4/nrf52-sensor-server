@@ -2,11 +2,12 @@
 
 // see spec for metadata format
 uint8_t SensorServerService::metadata_data[METADATA_SIZE] = { 
-  // start with max buffer of 0
-  0x00, 0x00,
-
   // start with sensor type of NON_A_SENSOR
   0x77, 0x77, 0x77, 0x77,
+
+  //start with max buffer size of 0
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 
   //start with current buffer size of 0
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -46,8 +47,6 @@ SensorServerService::SensorServerService(BLE &_ble, Serial *_debugger, EventQueu
   // All write callbacks
   ble.gattServer().onDataWritten(this, &SensorServerService::writeCallback);
 
-  // Initial Metadata Values
-  metadataUpdateMaxBufferSize(sensorController.getMaxBufferSize());
 }
 
 SensorServerService::~SensorServerService(){}
@@ -58,14 +57,16 @@ void SensorServerService::metadataFullCopy(uint8_t * newData){
   ble.gattServer().write(metadata_charac.getValueHandle(), metadata, METADATA_SIZE);
 }
 
-void SensorServerService::metadataUpdateMaxBufferSize(uint16_t maxBuffer){
-  std::memcpy(&metadata_data[0], &maxBuffer, sizeof(uint16_t));
+void SensorServerService::metadataUpdateMaxBufferSize(uint16_t maxBuffer, uint8_t sensorID){
+  unsigned int maxSizeOffset = 4, sizeLength = 2;
+  maxSizeOffset = maxSizeOffset + (sensorID * sizeLength);
+  std::memcpy(&metadata_data[maxSizeOffset], &maxBuffer, sizeof(uint16_t));
   const uint8_t * metadata = metadata_data;
   ble.gattServer().write(metadata_charac.getValueHandle(), metadata, METADATA_SIZE);
 }
 
-void SensorServerService::metadataUpdateSensorBufferSize(uint16_t newSize, uint8_t sensorID){
-  unsigned int sizeOffset = 6, sizeLength = 2;
+void SensorServerService::metadataUpdateCurrentBufferSize(uint16_t newSize, uint8_t sensorID){
+  unsigned int sizeOffset = 20, sizeLength = 2;
   sizeOffset = sizeOffset + (sizeLength * sensorID);
   std::memcpy(&metadata_data[sizeOffset], &newSize, sizeof(uint16_t));
   const uint8_t * metadata = metadata_data;
@@ -79,7 +80,7 @@ void SensorServerService::metadataUpdateSensorBufferSize(uint16_t newSize, uint8
  * @param sensorType The type to set the sensor to - 4 least significant bits
  */
 void SensorServerService::metadataUpdateSensorType(uint8_t sensorID, uint8_t sensorType){
-  unsigned int typeOffset = 2;
+  unsigned int typeOffset = 0;
   typeOffset = typeOffset + (sensorID / (uint8_t)2);
 
   uint8_t metadataByte = metadata_data[typeOffset];
@@ -100,7 +101,7 @@ void SensorServerService::metadataCallback(GattReadAuthCallbackParams *params){
   for(int i=0; i < sensorController.getNumSensors(); i++){
     int size = sensorController.getSensorStore(i)->getCurrentSize();
     uint16_t updateSize = (size > 65536) ? 0xFFFF : (uint16_t)size;
-    metadataUpdateSensorBufferSize(updateSize, (uint8_t)i);
+    metadataUpdateCurrentBufferSize(updateSize, (uint8_t)i);
   }
 }
 
@@ -140,7 +141,7 @@ void SensorServerService::writeCallback(const GattWriteCallbackParams *params){
 }
 
 void SensorServerService::flushStageData(unsigned int oldestLimit, unsigned int youngLimit, uint8_t sensor){
-  unsigned int sizeStage = sensorController.flushSensorStore(oldestLimit, youngLimit, sensor);
+  sensorController.flushSensorStore(oldestLimit, youngLimit, sensor);
   ble.gattServer().write(stage_charac.getValueHandle(), sensorController.getPackage(sensor), STAGE_SIZE);
 }
 
@@ -161,20 +162,21 @@ void SensorServerService::stageCommandHandler(const uint8_t *data){
     
     std::memcpy(&newInterval, &data[2], sizeof(uint16_t));
     std::memcpy(&newThreshold, &data[4], sizeof(float));
-    
-    configUpdate(data[1], newInterval, newThreshold);
+
+    configUpdateHandler(data[1], newInterval, newThreshold);
     break;
   default:
     break;
   }
 }
 
-int SensorServerService::addSensor(Sensor *sensor, uint16_t interval, float threshold, sensorType type, PinName *pins, int numPins){
-  int newSensorID = sensorController.addSensor(sensor, interval, type, pins, numPins);
+int SensorServerService::addSensor(Sensor *sensor, uint16_t interval, float threshold, sensorType type, PinName *pins, int numPins, int memSize){
+  int newSensorID = sensorController.addSensor(sensor, interval, threshold, type, pins, numPins, memSize);
   //TODO tidy this up
   newSensorID = (newSensorID > 15) ? 15 : newSensorID;
   if(newSensorID >= 0){
     metadataUpdateSensorType((uint8_t)newSensorID, (uint8_t)type);
+    metadataUpdateMaxBufferSize((uint16_t)sensorController.getSensorStore(newSensorID)->getStoreSize(), newSensorID);
     configUpdate((uint8_t)newSensorID, interval, threshold);
       
     return newSensorID;
@@ -183,3 +185,9 @@ int SensorServerService::addSensor(Sensor *sensor, uint16_t interval, float thre
   return -1;
 }
 
+void SensorServerService::configUpdateHandler(uint8_t sensorID, uint16_t interval, float threshold){
+  sensorController.getSensorStore(sensorID)->setThreshold(threshold);
+
+  //update config characteristic
+  configUpdate(sensorID, interval, threshold);
+}

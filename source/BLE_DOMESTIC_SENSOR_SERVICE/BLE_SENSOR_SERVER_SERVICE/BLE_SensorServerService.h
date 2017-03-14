@@ -14,7 +14,7 @@
 class SensorServerService {
  public:
   static const uint16_t SSS_UUID = 0xA000;
-  static const unsigned int METADATA_SIZE = 22;
+  static const unsigned int METADATA_SIZE = 36;
   static const uint16_t METADATA_UUID = 0xA001;
   static const unsigned int LIVEREAD_SIZE = 8*4;
   static const uint16_t LIVEREAD_UUID = 0xA002;
@@ -30,8 +30,8 @@ class SensorServerService {
   
   /* Metadata */
   void metadataFullCopy(uint8_t * newData);
-  void metadataUpdateMaxBufferSize(uint16_t maxSize);
-  void metadataUpdateSensorBufferSize(uint16_t newSize, uint8_t sensorID);
+  void metadataUpdateMaxBufferSize(uint16_t maxSize, uint8_t sensorID);
+  void metadataUpdateCurrentBufferSize(uint16_t newSize, uint8_t sensorID);
   void metadataUpdateSensorType(uint8_t sensorID, uint8_t sensorType);
 
   /* Live Read */
@@ -39,7 +39,8 @@ class SensorServerService {
 
   /* Configuration */
   virtual void configurationWriteCallback(uint16_t interval, uint32_t threshold) =0;
-
+  void configUpdate(uint8_t sensorID, uint16_t interval, float threshold);
+  
   /* Staging Command */
   virtual void stagingCommandWriteCallback(const uint8_t * command) =0;
 
@@ -54,7 +55,7 @@ class SensorServerService {
   void liveReadCallback(GattReadAuthCallbackParams * params);
   void metadataCallback(GattReadAuthCallbackParams * params);
 
-  int addSensor(Sensor *sensor, uint16_t interval, float threshold, sensorType _type, PinName *pins, int numPins);
+  int addSensor(Sensor *sensor, uint16_t interval, float threshold, sensorType _type, PinName *pins, int numPins, int memSize);
   
  protected:
   BLE &ble;
@@ -78,7 +79,8 @@ class SensorServerService {
   /* NOTE: data will always be of length STAGE_COMMAND_SIZE. Any unused bytes at the end 
      are set to 0x00*/
   void stageCommandHandler(const uint8_t *data);
-  void configUpdate(uint8_t sensorID, uint16_t interval, float threshold);
+
+  void configUpdateHandler(uint8_t sensorID, uint16_t interval, float threshold);
 };
 
 

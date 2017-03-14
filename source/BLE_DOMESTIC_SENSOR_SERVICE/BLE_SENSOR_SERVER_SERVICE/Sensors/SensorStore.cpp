@@ -4,12 +4,13 @@
 
 time_t SensorStore::lastReadingTime = 0;
 
-SensorStore::SensorStore(int _memorySize, int _stageSize, uint16_t interval) :
+SensorStore::SensorStore(int _memorySize, int _stageSize, uint16_t interval, float _threshold) :
   top(0),
   bottom(0),
   memorySize(_memorySize),
   stageSize(_stageSize),
-  measurementInterval(interval)
+  measurementInterval(interval),
+  threshold(_threshold)
 {
 
   /* Size of SensorRecord will determine how many readings can be stored*/
@@ -48,10 +49,19 @@ int SensorStore::getStageSize(){
 //threshold in situations where ((time_now - lastReadingTime) > (0.75 * max_interval_value))
 void SensorStore::addReading(float value){
 
+  int currentSize = getCurrentSize();
+
+  if(currentSize > 0){  // Only add values that exceed threshold relative to previous reading
+    float lastReading = store[(top-1)%storeSize].getReading();
+    if(std::fabs(lastReading - value) < threshold){
+      return;
+    }
+  }
+  
   uint16_t timeDelta = 0;
   time_t currentTime = time(NULL);
 
-  if(getCurrentSize() > 0){ // Ignore time delta for first reading
+  if(currentSize > 0){ // Ignore time delta for first reading
     double timeDiff = difftime(currentTime, lastReadingTime);
     unsigned long delta = ((timeDiff / measurementInterval) + 0.5);
     timeDelta = (delta > 65535) ? 0xFFFF : (uint16_t)delta;

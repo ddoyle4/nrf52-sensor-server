@@ -81,7 +81,33 @@ DS1820::DS1820 (PinName data_pin, PinName power_pin, bool power_polarity) : _dat
 
     gpio->OTYPER |= (uint32_t)(1 << pin_index); 
     #endif
+
+    bool unassignedp = unassignedProbe(&_datapin, _ROM);
+
+    int tryout = 10;
+    int delay = 1000000;
+    int d = delay;
     
+    if(!unassignedp){
+      while(!unassignedp && tryout > 0){
+	unassignedp = unassignedProbe(&_datapin, _ROM);
+	tryout--;
+
+	while(d > 0){ d--; }
+	d = delay;
+      }
+
+      if(!unassignedp){ error("No unassigned DS1820 found!\n"); }
+      
+    }
+
+    
+    _datapin.input();
+    probes.append(this);
+    _parasite_power = !read_power_supply();
+    
+      
+      /*
     if (!unassignedProbe(&_datapin, _ROM))
         error("No unassigned DS1820 found!\n");
     else {
@@ -89,6 +115,7 @@ DS1820::DS1820 (PinName data_pin, PinName power_pin, bool power_polarity) : _dat
         probes.append(this);
         _parasite_power = !read_power_supply();
     }
+      */
 }
 
 DS1820::~DS1820 (void) {

@@ -11,7 +11,7 @@ DomesticSensorService::DomesticSensorService(BLE &ble, Serial *usbDebug, EventQu
   pins[0] = p11;
   int numPins = 1;
   Sensor *newSensor = new DS18B20_TemperatureSensor(pins[0]);
-  addSensor(newSensor, (uint16_t)5, (float) 0.25, TEMPERATURE, pins, numPins);
+  addSensor(newSensor, (uint16_t)5, (float) 0.25, TEMPERATURE, pins, numPins, 1024);
 }
 
 DomesticSensorService::~DomesticSensorService(){}

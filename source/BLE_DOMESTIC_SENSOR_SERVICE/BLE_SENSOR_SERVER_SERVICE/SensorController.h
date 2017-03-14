@@ -50,7 +50,7 @@ class SensorController {
   SensorController(Serial *debug, EventQueue *eventQueue);
   ~SensorController();
   
-  int addSensor(Sensor *sensor, uint16_t interval, sensorType _type, PinName *pins, int numPins);
+  int addSensor(Sensor *sensor, uint16_t interval, float threshold, sensorType _type, PinName *pins, int numPins, int memSize);
   int getNumSensors(){ return numActiveSensors; }
   Sensor * getSensor(int sensorID){ return sensors[sensorID].sensor; }
   SensorStore * getSensorStore(int sensorID){ return sensors[sensorID].store; }
@@ -64,6 +64,7 @@ class SensorController {
   void performMeasurement(int t);
   sensorControl sensors[NUM_SENSOR_SLOTS];
   int numActiveSensors;
+  int currentStoreAllocation;
 };
 
 #endif
