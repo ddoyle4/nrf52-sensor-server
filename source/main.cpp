@@ -6,6 +6,7 @@
 //#include "BLE_DOMESTING_THERMOMETER_SERVICE/DomesticThermometerService.h"
 #include "BLE_DOMESTIC_SENSOR_SERVICE/BLE_DomesticSensorService.h"
 
+
 #define DATA_PIN p11
 
 //DS1820 probe(DATA_PIN);
