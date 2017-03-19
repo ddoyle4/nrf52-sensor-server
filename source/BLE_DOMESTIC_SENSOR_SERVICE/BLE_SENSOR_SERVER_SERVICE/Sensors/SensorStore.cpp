@@ -175,7 +175,7 @@ unsigned int SensorStore::getOldestRealTimeDelta(){
 }
 
 void SensorStore::setStageData(uint8_t *stage, unsigned int start, std::stack<SensorRecord> records, unsigned int timeDelta, uint8_t sensorID, bool missing){
-  std::cout << " -- " << records.size() << " " << timeDelta << std::endl; 
+  //  std::cout << " -- " << records.size() << " " << timeDelta << std::endl; 
   int indexOffset = 0, size = records.size();
   //set flags
   uint8_t flagsAndSensorID = 0x00;

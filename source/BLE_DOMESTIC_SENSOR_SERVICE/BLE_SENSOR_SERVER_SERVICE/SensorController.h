@@ -70,7 +70,7 @@ class SensorController {
   int currentStoreAllocation;
   int stageSize;
   uint8_t * stage;
-  time_t lastStageFlushTime;
+  time_t lastStartTimeUpdate;
 };
 
 #endif

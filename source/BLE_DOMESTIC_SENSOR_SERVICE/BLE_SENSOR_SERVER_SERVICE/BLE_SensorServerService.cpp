@@ -129,10 +129,16 @@ void SensorServerService::configUpdate(uint8_t sensorID, uint16_t interval, floa
 
 void SensorServerService::stageReadCallback(GattReadAuthCallbackParams *params){
   //TODO check bool return status and yay/nay the read for that
-  sensorController.updateStageStartTime();
-  // TODO maybe try to index this a little better like only write the start time, is this possible?
-  ble.gattServer().write(stage_charac.getValueHandle(), sensorController.getPackage(), STAGE_SIZE);
-  stageBeforeReadCallback();
+
+  //NOTE this is called multiple times for each stage read - looks like it's called
+  //to authorise each chunk of data being sent. Must update the start time only once
+  if(params->offset == 0){
+
+    sensorController.updateStageStartTime();
+    ble.gattServer().write(stage_charac.getValueHandle(), sensorController.getPackage(), STAGE_SIZE);
+  }
+
+  //  stageBeforeReadCallback();
 }
 
 
@@ -156,8 +162,9 @@ void SensorServerService::stageCommandHandler(const uint8_t *data){
 
     std::memcpy(&oldLimit, &data[1], sizeof(unsigned int));
     std::memcpy(&youngLimit, &data[5], sizeof(unsigned int));
-
+    debugger->printf("New stage command - old: %d, young: %d\n\r", oldLimit, youngLimit);
     flushStageData(oldLimit, youngLimit, data[9]);
+    debugger->printf("Stage command handled successfully\n\r");
     break;
   case 0x10: //Update config
     uint16_t newInterval;

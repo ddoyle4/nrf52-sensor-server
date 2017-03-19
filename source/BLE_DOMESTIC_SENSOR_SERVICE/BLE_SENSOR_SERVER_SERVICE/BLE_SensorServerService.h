@@ -22,7 +22,7 @@ class SensorServerService {
   static const uint16_t CONFIGURATION_UUID = 0xA003;
   static const unsigned int STAGINGCOMMAND_SIZE = 12;
   static const uint16_t STAGINGCOMMAND_UUID = 0xA004;
-  static const unsigned int STAGE_SIZE = 512;
+  static const unsigned int STAGE_SIZE = 500;
   static const uint16_t STAGE_UUID = 0xA005;
 
   SensorServerService(BLE &ble, Serial * debugger, EventQueue *eventQueue);

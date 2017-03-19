@@ -7,7 +7,7 @@ SensorController::SensorController(Serial *debug, EventQueue *queue, int _stageS
   numActiveSensors(0),
   currentStoreAllocation(0),
   stageSize(_stageSize),
-  lastStageFlushTime(0)
+  lastStartTimeUpdate(0)
 {
   //lookup mbed memory allocation for this
   stage = (uint8_t *)malloc(sizeof(uint8_t)*stageSize);
@@ -71,7 +71,7 @@ int SensorController::addSensor(Sensor *_sensor, uint16_t interval, float thresh
  */
 unsigned int SensorController::flushSensorStore(unsigned int oldLimit, unsigned int youngLimit, uint8_t sensor){
   SensorStore * store = sensors[sensor].store;
-  lastStageFlushTime = time(NULL);
+  lastStartTimeUpdate = time(NULL);
   unsigned int numRecords = store->flush(stage, oldLimit, youngLimit, sensor, stageSize);
   return (numRecords * SensorStore::STAGE_RECORD_UNIT_SIZE) + SensorStore::STAGE_HEADER_SIZE;
 }
@@ -84,6 +84,11 @@ const uint8_t * SensorController::getPackage() const{
 void SensorController::updateStageStartTime(){
   unsigned int startTime;
   std::memcpy(&startTime, &stage[STAGE_START_TIME_OFFSET], sizeof(unsigned int));
+  double elapsedTime = difftime(time(NULL), lastStartTimeUpdate);
+  unsigned int newStartTime = startTime + (unsigned int)(elapsedTime + 0.5);
+  debugger->printf("start: %d, elapsed: %d, newStartTime: %d\n\n", startTime, elapsedTime, newStartTime);
+  std::memcpy(&stage[STAGE_START_TIME_OFFSET], &newStartTime, sizeof(unsigned int));
+  lastStartTimeUpdate = time(NULL);
 }
 
 
