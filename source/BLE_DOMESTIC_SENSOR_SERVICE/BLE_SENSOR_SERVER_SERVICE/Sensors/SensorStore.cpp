@@ -91,13 +91,14 @@ int SensorStore::getCurrentSize(){
  * 
  * @return the number of records that were written to the stage
  */
-unsigned int SensorStore::flush(uint8_t *stage, unsigned int oldestTimeDelta, unsigned int youngestTimeDelta, uint8_t sensorID, int stageSize){
-
+unsigned int SensorStore::flush(uint8_t *stage, unsigned int oldestTimeDelta, unsigned int youngestTimeDelta, uint8_t sensorID, int stageSize){  
   //check for space - in a perfect world this wouldn't be necessary
   if(stageSize < (STAGE_HEADER_SIZE + SensorRecord::SIZE_RECORD)){ return 0; }
   
   unsigned int
     index = bottom,
+    acf_accumulatedTime = 0,
+    acf_index,
     relationalDelta,
     realTimeDelta,
     prevRealTimeDelta,
@@ -105,15 +106,15 @@ unsigned int SensorStore::flush(uint8_t *stage, unsigned int oldestTimeDelta, un
     currentSize = 0,
     maxReadingsSize = stageSize - STAGE_HEADER_SIZE - SensorRecord::SIZE_RECORD;
 
-  bool missedData = false; //flag - records missed due to space limitations - promps further calls
+  bool
+    missedData = false,
+    acf_enabled = false; //flag - records not flushed due to space limitations - promps further calls
   
   //real time delta of time pointed to by relational delta of store[bottom]
   prevRealTimeDelta = getOldestRealTimeDelta();
 
   SensorRecord currentRecord;     
   std::stack<SensorRecord> records;
-
-  
   
   //find all relevant records
   while(index < top){ //TODO fix this - maybe make top and bottom unsigned ints
@@ -134,6 +135,15 @@ unsigned int SensorStore::flush(uint8_t *stage, unsigned int oldestTimeDelta, un
 	missedData = true;
       }
     }
+
+    //keep track of realTime of any record that was taken immediately before
+    //defined period - for use if no record is included
+    if(records.size() == 0
+       && realTimeDelta > oldestTimeDelta){
+      acf_accumulatedTime = realTimeDelta;
+      acf_index = index;
+      acf_enabled = true;
+    }
     
     // accumulate timeDelta to last appropriately staged reading
     if( (records.size() > 0) &&                                    
@@ -146,8 +156,24 @@ unsigned int SensorStore::flush(uint8_t *stage, unsigned int oldestTimeDelta, un
     index++;
   }
 
+  if(acf_enabled && records.size() == 0  && getCurrentSize() > 0){
+    /**
+     * There are readings in the store, but none fall within the time period specified,
+     * because the sensor reading remained within the threshold limit for the 
+     * defined period and/or the defined period falls in between two read intervals. Either
+     * way, we set the "average carried forward" flag and return the closest older reading
+     * which will serve as an average for the client to use for the specified period.
+     **/
+    records.push(getRecord((top - 1)%storeSize));
+    double timeDelta = difftime(time(NULL), lastReadingTime) + 0.5;
+    setStageData(stage, oldestTimeDelta, records, (unsigned int)timeDelta, sensorID, false, true);
+    
+    return 1;
+  }
+
+  
   double timeDelta = difftime(time(NULL), lastReadingTime) + accumulatedRelTime + 0.5;
-  setStageData(stage, oldestTimeDelta, records, (unsigned int)timeDelta, sensorID, missedData);
+  setStageData(stage, oldestTimeDelta, records, (unsigned int)timeDelta, sensorID, missedData, false);
   
   return records.size();
 }
@@ -174,19 +200,21 @@ unsigned int SensorStore::getOldestRealTimeDelta(){
   return (relationalTimeDelta * measurementInterval) + timeDelta;
 }
 
-void SensorStore::setStageData(uint8_t *stage, unsigned int start, std::stack<SensorRecord> records, unsigned int timeDelta, uint8_t sensorID, bool missing){
-  //  std::cout << " -- " << records.size() << " " << timeDelta << std::endl; 
+void SensorStore::setStageData(uint8_t *stage, unsigned int start, std::stack<SensorRecord> records,
+			       unsigned int timeDelta, uint8_t sensorID, bool missing, bool averageCarriedForward){
+
   int indexOffset = 0, size = records.size();
+
   //set flags
   uint8_t flagsAndSensorID = 0x00;
-  if(missing){
-    flagsAndSensorID = flagsAndSensorID | 0x80;
-  }
+  if(missing){ flagsAndSensorID |= 0x80; }
+  if(averageCarriedForward){ flagsAndSensorID |= 0x40; }
+  
   flagsAndSensorID = flagsAndSensorID | (sensorID & 0x0F);
   stage[indexOffset++] = flagsAndSensorID;
 
   //set starting time
-  std::memcpy(&stage[indexOffset], &start, 4);
+  std::memcpy(&stage[indexOffset], &timeDelta, 4);
   indexOffset += 4;
 
   //set count

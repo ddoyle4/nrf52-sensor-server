@@ -1,12 +1,27 @@
-
 #include "SensorStore.h"
 #include <iostream>
 #include <time.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 
-void printStoreHex(const uint8_t *store, int size){
+static int FLAGS_ID_OFFSET = 0;
+static int STARTING_TIME_OFFSET = 1;
+static int COUNT_OFFSET = 5;
+static int MEASUREMENT_INTERVAL_OFFSET = 6;
+static int READINGS_OFFSET = 8;
+static int READINGS_SIZE = 6;
+
+/**  STAGE HELPER FUNCTIONS **/
+
+struct stageReading{
+  uint16_t delta;
+  float reading;
+};
+
+
+void printStageHex(const uint8_t *store, int size){
 
   printf("flags: %x | sensor id: %x\n", (store[0]&0xF0), (store[0] & 0x0F));
   
@@ -17,63 +32,449 @@ void printStoreHex(const uint8_t *store, int size){
   printf("measurement interval: %x %x\n", store[6], store[7]);
 
   int index = 8;
+  int printSize = store[5];
   
-  for (int i = 0; i < size; i++){
+  for (int i = 0; i < size && printSize > 0; i++){
     for (int j = 0; j < SensorRecord::SIZE_RECORD; j++){
       printf("%x ", store[index++]);
     }
+    
     std::cout << "\n";
+    printSize--;
+  }
+}
+
+void setStageFlags(uint8_t *stage, bool missingVals, bool averageCarriedForward, uint8_t stageMode){
+  uint8_t flags = stage[FLAGS_ID_OFFSET] & 0x0F;
+
+  if(missingVals) { flags |= 0x80; }
+  if(averageCarriedForward){ flags |= 0x40; }
+
+  flags |= (stageMode & 0x03) << 4;
+
+  stage[FLAGS_ID_OFFSET] = flags;
+}
+
+uint8_t getFlags(uint8_t *stage){
+  return (stage[FLAGS_ID_OFFSET] & 0xF0);
+}
+
+void setSensorID(uint8_t *stage, uint8_t sensorID){
+  uint8_t flags = stage[FLAGS_ID_OFFSET] & 0xF0;
+  flags |= sensorID & 0x0F;
+  stage[FLAGS_ID_OFFSET] = flags;
+  
+}
+
+uint8_t getSensorID(uint8_t *stage){
+  return (stage[FLAGS_ID_OFFSET] & 0x0F);
+}
+
+void setStageStartTime(uint8_t *stage, unsigned int startTime){
+  std::memcpy(&stage[STARTING_TIME_OFFSET], &startTime, sizeof(unsigned int));
+}
+
+unsigned int getStartTime(uint8_t *stage){
+  unsigned int time;
+  std::memcpy(&time, &stage[STARTING_TIME_OFFSET], sizeof(unsigned int));
+  return time;
+}
+
+void setStageCount(uint8_t * stage, uint8_t count){
+  std::memcpy(&stage[COUNT_OFFSET], &count, sizeof(uint8_t));
+}
+
+uint8_t getCount(uint8_t *stage){
+  return stage[COUNT_OFFSET];
+}
+
+void setStageMeasurementInterval(uint8_t *stage, uint16_t interval){
+  std::memcpy(&stage[MEASUREMENT_INTERVAL_OFFSET], &interval, sizeof(uint16_t));
+}
+
+uint16_t getMInterval(uint8_t *stage){
+  uint16_t interval;
+  std::memcpy(&interval, &stage[MEASUREMENT_INTERVAL_OFFSET], sizeof(uint16_t));
+  return interval;
+}
+
+void addStageReading(uint8_t * stage, int index, uint16_t interval, float reading){
+  int offset = READINGS_OFFSET + (index * READINGS_SIZE);
+  std::memcpy(&stage[offset], &interval, sizeof(interval));
+  std::memcpy(&stage[offset+2], &reading, sizeof(reading));
+}
+
+stageReading getStageReading(uint8_t *stage, int index){
+  int offset = READINGS_OFFSET + (index * READINGS_SIZE);
+  stageReading reading;
+
+  std::memcpy(&reading.delta, &stage[offset], sizeof(uint16_t));
+  std::memcpy(&reading.reading, &stage[offset+2], sizeof(float));
+
+  return reading;
+}
+
+bool compareStage(uint8_t *stage_a, uint8_t *stage_b){
+  bool equal = true;
+
+  //flags
+  if(getFlags(stage_a) != getFlags(stage_b)){
+    printf("Flags different - A: %#01X, B: %#01X\n", getFlags(stage_a), getFlags(stage_b));
+    equal = false;
+  }
+
+  //sensor id
+  if(getSensorID(stage_a) != getSensorID(stage_b)){
+    printf("IDs different - A: %#01X, B: %#01X\n", getSensorID(stage_a), getSensorID(stage_b));
+    equal = false;
+  }
+
+  //start time
+  if(getStartTime(stage_a) != getStartTime(stage_b)){
+    printf("Start time different - A: %d, B: %d\n", getStartTime(stage_a), getStartTime(stage_b));
+    equal = false;
+  }
+
+  //count
+  if(getCount(stage_a) != getCount(stage_b)){
+    printf("Count different - A: %#01X, B: %#01X\n", getCount(stage_a), getCount(stage_b));
+    equal = false;
+  }
+
+  //measurement interval
+  if(getMInterval(stage_a) != getMInterval(stage_b)){
+    printf("M Interval different - A: %hu, B: %hu\n", getMInterval(stage_a), getMInterval(stage_b));
+    equal = false;
+  }
+
+  //compare each record
+  int
+    count_a = getCount(stage_a),
+    count_b = getCount(stage_b);
+  
+  if(count_a == count_b && count_a > 0){ 
+    for(int i = 0; i < count_a; i++){
+      stageReading a = getStageReading(stage_a, i);
+      stageReading b = getStageReading(stage_b, i);
+      if(a.delta != b.delta){
+	printf("Delta different - reading %d - A: %hu, B: %hu\n", i, a.delta, b.delta);
+	equal = false;
+      }
+
+      if(a.reading != b.reading){
+	printf("Reading different - reading %d - A: %f, B: %f\n", i, a.reading, b.reading);
+	equal = false;
+      }
     }
+  }
+
+  return equal;
+}
+
+void simulateReadingTestStage(SensorStore *store, float *readings, int *delays, int numReadings, uint16_t interval, uint8_t *testStage){
+  for(int i = 0; i < numReadings; i++){
+    store->addReading(readings[i]);
+    //Note: readings are sorted from most recent to oldest
+    uint16_t delta = (i == (numReadings - 1)) ? 0 : (uint16_t)delays[numReadings - i - 2];
+    addStageReading(testStage, i, delta, readings[numReadings - 1 - i]);
+    sleep(delays[i]*interval);
+  }
 }
 
 
-int main(){
+void simulateReadings(SensorStore *store, float *readings, int *delays, int numReadings, uint16_t interval){
+  for(int i = 0; i < numReadings; i++){
+    store->addReading(readings[i]);
+    sleep(delays[i]*interval);
+  }
+}
 
-  int memSize = 1024, stageSize = (14);
+
+/** TESTS PROPER  **/
+bool standardReadVerbose(){
+  int memSize = 1024, stageSize = 500;
+  uint8_t sensorID = 0x00;
   uint16_t interval = 2;
+  SensorStore testStore = SensorStore(memSize, interval, 0.0);
+
+  //actual stage that will be written to by SensorStore
+  uint8_t *actualStage = (uint8_t *)malloc(sizeof(uint8_t)*stageSize);
   
-  SensorStore testStore = SensorStore(memSize, stageSize, interval);
-  std::cout << "testStore mem size: " << testStore.getStoreSize() << std::endl;
-  std::cout << "testStore stage size: " << testStore.getStageSize() << std::endl;
+  time_t startOfData = time(NULL);
 
-  testStore.addReading(10.0);
-  sleep(2*interval);                // + 4
+  testStore.addReading(0.0);
+  sleep(1*interval);
 
+  testStore.addReading(1.0);
+  sleep(1*interval);
 
-
-  testStore.addReading(10.0);
-  sleep(2*interval);                // + 4
-  testStore.addReading(11.0);       
-  sleep(3*interval);                // + 6
-  time_t timeBeforeAdding = time(NULL);
-  testStore.addReading(12.0);
-
-  sleep(2*interval);
-  sleep(2*interval);
-
-
-  time_t timeAfterAdding = time(NULL);
-
-  std::cout << "size after adding: " << testStore.getCurrentSize() << std::endl;
-
-  std::cout << "Store: " << std::endl;
-  testStore.printStore();
-
-
-  std::cout << "time before adding: " << timeBeforeAdding << std::endl;
-  std::cout << "time after adding: " << timeAfterAdding << std::endl;
-
-  unsigned int oldest = (unsigned int)difftime(time(NULL), timeBeforeAdding);
-  std::cout << "oldest: " << (oldest) << std::endl;       // 14
-  unsigned int youngest = (unsigned int)difftime(time(NULL), timeAfterAdding);
-  std::cout << "youngest: " << (youngest) << std::endl; // 0
-
-  unsigned int num = testStore.flush(oldest, youngest, 0x01);
-  std::cout << "numbder of records staged: " << num << std::endl;
-  printStoreHex(testStore.package(), num);
+  testStore.addReading(1.0);
+  sleep(1*interval);
 
   
+  time_t endOfData = time(NULL);
+
+  unsigned int
+    oldestDelta = (unsigned int)(difftime(time(NULL), startOfData) + 0.5),
+    youngestDelta = (unsigned int)(difftime(time(NULL), endOfData) + 0.5);
   
+
+  printf("old: %d young %d\n", oldestDelta, youngestDelta);
   
+  testStore.flush(actualStage, oldestDelta, youngestDelta, sensorID, stageSize);
+
+  printStageHex(actualStage, stageSize);
+
+
+
+  free(actualStage);
+  
+  return true;
+}
+
+
+
+/** 
+ * Ensure correct data is returned when:
+ *   1. There is data in store
+ *   2. The defined time period captures all of this data
+ *   3. There is enough room on the stage to send all of the data
+ *   4. Ignoring threshold for now
+ *
+ * @return 
+ */
+bool standardRead(){
+  int memSize = 1024, stageSize = 500, numReadings = 2;
+  uint8_t sensorID = 0x00;
+  uint16_t interval = 2;
+  SensorStore testStore = SensorStore(memSize, interval, 0.0);
+
+  //actual stage that will be written to by SensorStore
+  uint8_t *actualStage = (uint8_t *)malloc(sizeof(uint8_t)*stageSize);
+  
+  //Set up test stage - for test to succeed, these should be identical at end
+  uint8_t *testStage = (uint8_t *)malloc(sizeof(uint8_t)*stageSize);
+  setStageFlags(testStage, false, false, 0x00);
+  setSensorID(testStage, sensorID);
+  setStageCount(testStage, (uint8_t)numReadings);
+  setStageMeasurementInterval(testStage, interval);
+  
+  time_t startOfData = time(NULL);
+
+  int delays[numReadings] =   {  1,  1};
+  float values[numReadings] = {0.0, 1.0};
+
+  //simulate adding readings to store, build testStage alongside
+  simulateReadingTestStage(&testStore, values, delays, numReadings, interval, testStage);
+
+  time_t endOfData = time(NULL);
+
+  unsigned int
+    oldestDelta = (unsigned int)(difftime(time(NULL), startOfData) + 0.5),
+    youngestDelta = (unsigned int)(difftime(time(NULL), endOfData) + 0.5);
+  
+  testStore.flush(actualStage, oldestDelta, youngestDelta, sensorID, stageSize);
+
+  //no time has elapsed since
+  setStageStartTime(testStage, 2);
+
+  bool success = compareStage(actualStage, testStage);
+
+  if(!success){
+    printf("\n\nActual Stage:\n\n");
+    printStageHex(actualStage, stageSize);
+    printf("\n\nExpected Stage:\n\n");
+    printStageHex(testStage, stageSize);
+  }
+
+
+  free(testStage);
+  free(actualStage);
+  
+  return success;
+}
+
+/** 
+ * Scenario: there are readings in the store,
+ * but the defined period is before any of the readings
+ * 
+ * 
+ * @return 
+ */
+bool periodBeforeReadings(){
+  int memSize = 1024, stageSize = 500, numReadings = 3;
+  uint8_t sensorID = 0x00;
+  uint16_t interval = 2;
+  SensorStore testStore = SensorStore(memSize, interval, 0.0);
+
+  //actual stage that will be written to by SensorStore
+  uint8_t *actualStage = (uint8_t *)malloc(sizeof(uint8_t)*stageSize);
+  
+  //Set up test stage - for test to succeed, these should be identical at end
+  uint8_t *testStage = (uint8_t *)malloc(sizeof(uint8_t)*stageSize);
+  setStageFlags(testStage, false, false, 0x00);
+  setSensorID(testStage, sensorID);
+  setStageCount(testStage, 0);
+  setStageMeasurementInterval(testStage, interval);
+  
+  time_t startOfPeriod = time(NULL);
+  sleep(2);
+  time_t endOfPeriod = time(NULL);
+
+  sleep(2);
+  
+  int delays[numReadings] =   {  1,  1};
+  float values[numReadings] = {0.0, 1.0};
+
+  //simulate adding readings to store, build testStage alongside
+  simulateReadingTestStage(&testStore, values, delays, numReadings, interval, testStage);
+
+
+
+  unsigned int
+    oldestDelta = (unsigned int)(difftime(time(NULL), startOfPeriod) + 0.5),
+    youngestDelta = (unsigned int)(difftime(time(NULL), endOfPeriod) + 0.5);
+  
+  testStore.flush(actualStage, oldestDelta, youngestDelta, sensorID, stageSize);
+
+  //no time has elapsed since
+  setStageStartTime(testStage, 0);
+
+  bool success = compareStage(actualStage, testStage);
+
+  if(!success){
+    printf("\n\nActual Stage:\n\n");
+    printStageHex(actualStage, stageSize);
+    printf("\n\nExpected Stage:\n\n");
+    printStageHex(testStage, stageSize);
+  }
+
+
+  free(testStage);
+  free(actualStage);
+  
+  return success;
+}
+
+bool triggerAverageCarriedForward(){
+  int memSize = 1024, stageSize = 500, numReadings = 3;
+  uint8_t sensorID = 0x00;
+  uint16_t interval = 2;
+  SensorStore testStore = SensorStore(memSize, interval, 0.0);
+
+  //actual stage that will be written to by SensorStore
+  uint8_t *actualStage = (uint8_t *)malloc(sizeof(uint8_t)*stageSize);
+  
+  //Set up test stage - for test to succeed, these should be identical at end
+  uint8_t *testStage = (uint8_t *)malloc(sizeof(uint8_t)*stageSize);
+  setStageFlags(testStage, false, true, 0x00);
+  setSensorID(testStage, sensorID);
+  setStageCount(testStage, (uint8_t)1);
+  setStageMeasurementInterval(testStage, interval);
+  
+
+  //values and delays from oldest to newest
+  int delays[numReadings] =   {  1,  1, 2};
+  float values[numReadings] = {0.0, 1.0, 4.0};
+
+  //simulate adding readings to store, build testStage alongside
+  simulateReadings(&testStore, values, delays, numReadings, interval);
+
+  sleep(2);
+  time_t startOfPeriod  = time(NULL);
+  sleep(2);
+  time_t endOfPeriod = time(NULL);
+
+  unsigned int
+    oldestDelta = (unsigned int)(difftime(time(NULL), startOfPeriod) + 0.5),
+    youngestDelta = (unsigned int)(difftime(time(NULL), endOfPeriod) + 0.5);
+  
+  testStore.flush(actualStage, oldestDelta, youngestDelta, sensorID, stageSize);
+
+  //one and only reading is the average carried forward
+  addStageReading(testStage, 0, delays[numReadings-2], values[numReadings-1]);
+  setStageStartTime(testStage, 8);
+
+  bool success = compareStage(actualStage, testStage);
+
+  if(!success){
+    printf("\n\nActual Stage:\n\n");
+    printStageHex(actualStage, stageSize);
+    printf("\n\nExpected Stage:\n\n");
+    printStageHex(testStage, stageSize);
+  }
+
+
+  free(testStage);
+  free(actualStage);
+  
+  return success;
+}
+
+bool emptyStoreRead(){
+  int memSize = 1024, stageSize = 500;
+  uint8_t sensorID = 0x00;
+  uint16_t interval = 2;
+  SensorStore testStore = SensorStore(memSize, interval, 0.0);
+
+  //actual stage that will be written to by SensorStore
+  uint8_t *actualStage = (uint8_t *)malloc(sizeof(uint8_t)*stageSize);
+  
+  //Set up test stage - for test to succeed, these should be identical at end
+  uint8_t *testStage = (uint8_t *)malloc(sizeof(uint8_t)*stageSize);
+  setStageFlags(testStage, false, false, 0x00);
+  setSensorID(testStage, sensorID);
+  setStageCount(testStage, (uint8_t)0);
+  setStageMeasurementInterval(testStage, interval);
+
+  time_t startOfPeriod  = time(NULL);
+  sleep(2);
+  time_t endOfPeriod = time(NULL);
+
+  unsigned int
+    oldestDelta = (unsigned int)(difftime(time(NULL), startOfPeriod) + 0.5),
+    youngestDelta = (unsigned int)(difftime(time(NULL), endOfPeriod) + 0.5);
+  
+  testStore.flush(actualStage, oldestDelta, youngestDelta, sensorID, stageSize);
+
+  //one and only reading is the average carried forward
+
+  setStageStartTime(testStage, 0);
+
+  bool success = compareStage(actualStage, testStage);
+
+  if(!success){
+    printf("\n\nActual Stage:\n\n");
+    printStageHex(actualStage, stageSize);
+    printf("\n\nExpected Stage:\n\n");
+    printStageHex(testStage, stageSize);
+  }
+
+
+  free(testStage);
+  free(actualStage);
+  
+  return success;
+}
+
+int main(){
+  /*
+  //std::cout << "Standard read verbose ... " << std::endl;
+  //std::cout << ((standardReadVerbose()) ? "\nPASS\n" : "\nFAIL\n");
+  
+  std::cout << "Standard read..." << std::endl;
+  std::cout << ((standardRead()) ? "\nPASS\n" : "\nFAIL\n");
+
+  std::cout << "Period before readings..." << std::endl;
+  std::cout << ((periodBeforeReadings()) ? "\nPASS\n" : "\nFAIL\n");
+  
+
+  std::cout << "Period after readings (triggering average carried forward)..." << std::endl;
+  std::cout << ((triggerAverageCarriedForward()) ? "\nPASS\n" : "\nFAIL\n");
+  */
+
+  std::cout << "Empty store read..." << std::endl;
+  std::cout << ((emptyStoreRead()) ? "\nPASS\n" : "\nFAIL\n");
+
   return 0;
 }

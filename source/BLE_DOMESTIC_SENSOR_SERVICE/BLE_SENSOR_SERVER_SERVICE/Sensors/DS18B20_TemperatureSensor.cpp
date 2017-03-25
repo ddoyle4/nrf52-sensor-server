@@ -2,6 +2,7 @@
 
 
 DS18B20_TemperatureSensor::DS18B20_TemperatureSensor(PinName pin) :
+  Sensor(),
   assignedPin(pin),
   probe(DS1820(pin))
 {
@@ -27,6 +28,8 @@ float DS18B20_TemperatureSensor::read(){
 
   if(!isSane(reading)){ return SANITY_FAIL_VALUE; }
 
+  lastReading = reading;
+  
   return reading;
 }
 

@@ -9,6 +9,7 @@
 #include "GattCallbackParamTypes.h"
 #include "SensorController.h"
 #include "Sensors/DS18B20_TemperatureSensor.h"
+#include "Sensors/RangeFinder.h"
 #include "Sensors/Sensor.h"
 
 class SensorServerService {

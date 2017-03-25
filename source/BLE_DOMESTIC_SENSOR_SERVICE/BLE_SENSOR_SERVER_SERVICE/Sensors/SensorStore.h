@@ -34,7 +34,8 @@ class SensorStore {
 		    std::stack<SensorRecord> records,
 		    unsigned int lastStageTimeDelta,
 		    uint8_t sensorID,
-		    bool missingFlag
+		    bool missingFlag,
+		    bool averageCarriedForward
 		    );
   unsigned int getOldestRealTimeDelta();
   void formatStage(uint8_t *stage, int size);
