@@ -296,7 +296,7 @@ bool standardRead(){
 
 /** 
  * Scenario: there are readings in the store,
- * but the defined period is before any of the readings
+ * but the defined period is before (older than) any of the readings
  * 
  * 
  * @return 
@@ -458,21 +458,19 @@ bool emptyStoreRead(){
 }
 
 int main(){
-  /*
-  //std::cout << "Standard read verbose ... " << std::endl;
-  //std::cout << ((standardReadVerbose()) ? "\nPASS\n" : "\nFAIL\n");
+
+  std::cout << "Standard read verbose ... " << std::endl;
+  std::cout << ((standardReadVerbose()) ? "\nPASS\n" : "\nFAIL\n");
   
   std::cout << "Standard read..." << std::endl;
   std::cout << ((standardRead()) ? "\nPASS\n" : "\nFAIL\n");
 
   std::cout << "Period before readings..." << std::endl;
   std::cout << ((periodBeforeReadings()) ? "\nPASS\n" : "\nFAIL\n");
-  
 
   std::cout << "Period after readings (triggering average carried forward)..." << std::endl;
   std::cout << ((triggerAverageCarriedForward()) ? "\nPASS\n" : "\nFAIL\n");
-  */
-
+  
   std::cout << "Empty store read..." << std::endl;
   std::cout << ((emptyStoreRead()) ? "\nPASS\n" : "\nFAIL\n");
 

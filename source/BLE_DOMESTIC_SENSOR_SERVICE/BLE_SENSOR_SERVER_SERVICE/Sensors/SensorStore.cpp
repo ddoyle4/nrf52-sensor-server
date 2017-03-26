@@ -97,8 +97,6 @@ unsigned int SensorStore::flush(uint8_t *stage, unsigned int oldestTimeDelta, un
   
   unsigned int
     index = bottom,
-    acf_accumulatedTime = 0,
-    acf_index,
     relationalDelta,
     realTimeDelta,
     prevRealTimeDelta,
@@ -107,8 +105,8 @@ unsigned int SensorStore::flush(uint8_t *stage, unsigned int oldestTimeDelta, un
     maxReadingsSize = stageSize - STAGE_HEADER_SIZE - SensorRecord::SIZE_RECORD;
 
   bool
-    missedData = false,
-    acf_enabled = false; //flag - records not flushed due to space limitations - promps further calls
+    missedData = false,  //records not flushed due to insufficient stage space
+    acf_enabled = false; //no records to flush as threshold not breached within period
   
   //real time delta of time pointed to by relational delta of store[bottom]
   prevRealTimeDelta = getOldestRealTimeDelta();
@@ -138,10 +136,7 @@ unsigned int SensorStore::flush(uint8_t *stage, unsigned int oldestTimeDelta, un
 
     //keep track of realTime of any record that was taken immediately before
     //defined period - for use if no record is included
-    if(records.size() == 0
-       && realTimeDelta > oldestTimeDelta){
-      acf_accumulatedTime = realTimeDelta;
-      acf_index = index;
+    if(records.size() == 0 && realTimeDelta > oldestTimeDelta){
       acf_enabled = true;
     }
     
@@ -214,6 +209,7 @@ void SensorStore::setStageData(uint8_t *stage, unsigned int start, std::stack<Se
   stage[indexOffset++] = flagsAndSensorID;
 
   //set starting time
+  timeDelta = (records.size() > 0) ? timeDelta : 0; 
   std::memcpy(&stage[indexOffset], &timeDelta, 4);
   indexOffset += 4;
 
