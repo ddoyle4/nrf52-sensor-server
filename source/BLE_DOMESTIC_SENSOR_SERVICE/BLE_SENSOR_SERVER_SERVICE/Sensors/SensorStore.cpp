@@ -2,14 +2,14 @@
 #include <stdlib.h>
 #include <iostream>
 
-time_t SensorStore::lastReadingTime = 0;
 
 SensorStore::SensorStore(int _memorySize, uint16_t interval, float _threshold) :
   top(0),
   bottom(0),
   memorySize(_memorySize),
   measurementInterval(interval),
-  threshold(_threshold)
+  threshold(_threshold),
+  lastReadingTime(0)
 {
 
   /* Size of SensorRecord will determine how many readings can be stored*/

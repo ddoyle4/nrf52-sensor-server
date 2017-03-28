@@ -162,9 +162,9 @@ void SensorServerService::stageCommandHandler(const uint8_t *data){
 
     std::memcpy(&oldLimit, &data[1], sizeof(unsigned int));
     std::memcpy(&youngLimit, &data[5], sizeof(unsigned int));
-    debugger->printf("New stage command - old: %d, young: %d\n\r", oldLimit, youngLimit);
+    //    debugger->printf("New stage command - old: %d, young: %d\n\r", oldLimit, youngLimit);
     flushStageData(oldLimit, youngLimit, data[9]);
-    debugger->printf("Stage command handled successfully\n\r");
+    //    debugger->printf("Stage command handled successfully\n\r");
     break;
   case 0x10: //Update config
     uint16_t newInterval;

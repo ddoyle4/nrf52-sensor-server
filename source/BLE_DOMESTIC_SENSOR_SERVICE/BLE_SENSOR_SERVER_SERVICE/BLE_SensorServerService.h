@@ -11,6 +11,7 @@
 #include "Sensors/DS18B20_TemperatureSensor.h"
 #include "Sensors/RangeFinder.h"
 #include "Sensors/Sensor.h"
+#include "Sensors/DebugSensor.h"
 
 class SensorServerService {
  public:

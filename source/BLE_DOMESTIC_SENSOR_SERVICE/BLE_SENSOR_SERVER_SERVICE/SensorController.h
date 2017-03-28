@@ -29,6 +29,7 @@ typedef enum sensorType {
   TEMPERATURE,
   RANGE_FINDER,
   PRESSURE,
+  DEBUG_SENSOR,
   NOT_A_SENSOR = 7
 } sensorType;
 

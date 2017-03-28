@@ -43,7 +43,7 @@ class SensorStore {
   SensorRecord * store;
   uint16_t measurementInterval;
   float threshold;
-  static time_t lastReadingTime;
+  time_t lastReadingTime;
 };
 
 #endif

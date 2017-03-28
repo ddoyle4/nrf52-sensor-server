@@ -23,7 +23,7 @@ void SensorController::performMeasurement(int t){
   sensorControl sensor = sensors[t];
   float reading = sensor.sensor->read();
   sensor.store->addReading(reading);
-  //debugger->printf("READING:%f. STORE SIZE: %d\n\r", reading, sensor.store->getStoreSize());
+  debugger->printf("Sensor: %d READING:%f. STORE SIZE: %d\n\r", t, reading, sensor.store->getStoreSize());
 }
 
 uint16_t SensorController::getMaxBufferSize(){
@@ -86,7 +86,7 @@ void SensorController::updateStageStartTime(){
   std::memcpy(&startTime, &stage[STAGE_START_TIME_OFFSET], sizeof(unsigned int));
   double elapsedTime = difftime(time(NULL), lastStartTimeUpdate);
   unsigned int newStartTime = startTime + (unsigned int)(elapsedTime + 0.5);
-  debugger->printf("start: %d, elapsed: %d, newStartTime: %d\n\n", startTime, elapsedTime, newStartTime);
+  //  debugger->printf("start: %d, elapsed: %d, newStartTime: %d\n\n", startTime, elapsedTime, newStartTime);
   std::memcpy(&stage[STAGE_START_TIME_OFFSET], &newStartTime, sizeof(unsigned int));
   lastStartTimeUpdate = time(NULL);
 }

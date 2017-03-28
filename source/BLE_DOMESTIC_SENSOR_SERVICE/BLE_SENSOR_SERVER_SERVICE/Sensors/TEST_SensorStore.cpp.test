@@ -457,8 +457,74 @@ bool emptyStoreRead(){
   return success;
 }
 
-int main(){
+/** 
+ * Ensure circular buffer wraps correctly
+ * 
+ * 
+ * @return 
+ */
+bool circularBufferWrap(){
+  int memSize = 80, stageSize = 500, numReadings = 5;
+  uint8_t sensorID = 0x00;
+  uint16_t interval = 2;
+  SensorStore testStore = SensorStore(memSize, interval, 0.0);
 
+  //actual stage that will be written to by SensorStore
+  uint8_t *actualStage = (uint8_t *)malloc(sizeof(uint8_t)*stageSize);
+  
+  //Set up test stage - for test to succeed, these should be identical at end
+  uint8_t *testStage = (uint8_t *)malloc(sizeof(uint8_t)*stageSize);
+  setStageFlags(testStage, false, false, 0x00);
+  setSensorID(testStage, sensorID);
+  setStageCount(testStage, (uint8_t)numReadings);
+  setStageMeasurementInterval(testStage, interval);
+  
+  time_t startOfData = time(NULL);
+
+  int overflow = 5;
+  
+  int delays[numReadings+overflow] =   {  1,  1,    1,   1,   1,   1,   1,   1,   1,   1,    1};
+  float values[numReadings+overflow] = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0};
+
+  //simulate adding readings to store, build testStage alongside
+  simulateReading(&testStore, values, delays, numReadings, interval);
+
+  time_t endOfData = time(NULL);
+
+  for(int i = numReadings-1; i >= 0; i--){
+    addStageReading(testStage, i, delays, readings[numReadings - 1 - i]);
+  }
+  
+  
+  unsigned int
+    oldestDelta = (unsigned int)(difftime(time(NULL), startOfData) + 0.5),
+    youngestDelta = (unsigned int)(difftime(time(NULL), endOfData) + 0.5);
+  
+  testStore.flush(actualStage, oldestDelta, youngestDelta, sensorID, stageSize);
+
+  //no time has elapsed since
+  setStageStartTime(testStage, 2);
+
+  bool success = compareStage(actualStage, testStage);
+
+  if(!success){
+    printf("\n\nActual Stage:\n\n");
+    printStageHex(actualStage, stageSize);
+    printf("\n\nExpected Stage:\n\n");
+    printStageHex(testStage, stageSize);
+  }
+
+
+  free(testStage);
+  free(actualStage);
+  
+  return success;
+}
+
+
+
+int main(){
+  /*
   std::cout << "Standard read verbose ... " << std::endl;
   std::cout << ((standardReadVerbose()) ? "\nPASS\n" : "\nFAIL\n");
   
@@ -473,6 +539,8 @@ int main(){
   
   std::cout << "Empty store read..." << std::endl;
   std::cout << ((emptyStoreRead()) ? "\nPASS\n" : "\nFAIL\n");
+  */
 
+  
   return 0;
 }
