@@ -1,6 +1,7 @@
 #include "SensorStore.h"
 #include <stdlib.h>
 #include <iostream>
+#include <cstdio>
 
 
 SensorStore::SensorStore(int _memorySize, uint16_t interval, float _threshold) :
@@ -14,7 +15,7 @@ SensorStore::SensorStore(int _memorySize, uint16_t interval, float _threshold) :
 
   /* Size of SensorRecord will determine how many readings can be stored*/
   storeSize = memorySize / (sizeof(SensorRecord));
-  
+  printf("store created\n\r");
   //IMPORTANT NOTE: look into using mbed_ualloc() instead - https://docs.mbed.com/docs/getting-started-mbed-os/en/latest/Full_Guide/memory/#memory-allocation-in-mbed-os
   store = (SensorRecord *) malloc(sizeof(SensorRecord) * storeSize);
 }

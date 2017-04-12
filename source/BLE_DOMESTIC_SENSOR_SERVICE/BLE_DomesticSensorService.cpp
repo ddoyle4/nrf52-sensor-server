@@ -12,7 +12,7 @@ DomesticSensorService::DomesticSensorService(BLE &ble, Serial *usbDebug, EventQu
   tpins[0] = p11;
   int numPins = 1;
   Sensor *temp = new DS18B20_TemperatureSensor(tpins[0]);
-  addSensor(temp, (uint16_t)5, (float) 0.0, TEMPERATURE, tpins, numPins, 80);
+  addSensor(temp, (uint16_t)5, (float) 0.0, TEMPERATURE, tpins, numPins, 1024);
 
   //RANGE FINDER
   PinName *rfpins = new PinName[2];
@@ -20,7 +20,7 @@ DomesticSensorService::DomesticSensorService(BLE &ble, Serial *usbDebug, EventQu
   rfpins[1] = p13;
   /*                                      trigger   echo  */
   Sensor * rangeFinder = new RangeFinder(rfpins[1], rfpins[0]);
-  addSensor(rangeFinder, (uint16_t)5, (float)0.0, RANGE_FINDER, rfpins, 2, 80);
+  addSensor(rangeFinder, (uint16_t)5, (float)0.0, RANGE_FINDER, rfpins, 2, 1024);
 }
 
 DomesticSensorService::~DomesticSensorService(){}

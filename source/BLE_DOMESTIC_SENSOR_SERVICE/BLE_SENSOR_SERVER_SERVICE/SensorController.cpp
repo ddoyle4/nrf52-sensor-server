@@ -23,7 +23,7 @@ void SensorController::performMeasurement(int t){
   sensorControl sensor = sensors[t];
   float reading = sensor.sensor->read();
   sensor.store->addReading(reading);
-  debugger->printf("Sensor: %d READING:%f. STORE SIZE: %d\n\r", t, reading, sensor.store->getStoreSize());
+  //  debugger->printf("Sensor: %d READING:%f. STORE SIZE: %d\n\r", t, reading, sensor.store->getStoreSize());
 }
 
 uint16_t SensorController::getMaxBufferSize(){
