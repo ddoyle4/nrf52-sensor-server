@@ -1,6 +1,7 @@
 #include "SensorStore.h"
 #include <stdlib.h>
 #include <iostream>
+
 #include <cstdio>
 
 
@@ -92,7 +93,9 @@ int SensorStore::getCurrentSize(){
  * 
  * @return the number of records that were written to the stage
  */
+
 unsigned int SensorStore::flush(uint8_t *stage, unsigned int oldestTimeDelta, unsigned int youngestTimeDelta, uint8_t sensorID, int stageSize){  
+
   //check for space - in a perfect world this wouldn't be necessary
   if(stageSize < (STAGE_HEADER_SIZE + SensorRecord::SIZE_RECORD)){ return 0; }
   
@@ -114,7 +117,6 @@ unsigned int SensorStore::flush(uint8_t *stage, unsigned int oldestTimeDelta, un
 
   SensorRecord currentRecord;     
   std::stack<SensorRecord> records;
-  
   //find all relevant records
   while(index < top){ //TODO fix this - maybe make top and bottom unsigned ints
     currentRecord = getRecord(index%storeSize);
@@ -134,7 +136,6 @@ unsigned int SensorStore::flush(uint8_t *stage, unsigned int oldestTimeDelta, un
 	missedData = true;
       }
     }
-
     //keep track of realTime of any record that was taken immediately before
     //defined period - for use if no record is included
     if(records.size() == 0 && realTimeDelta > oldestTimeDelta){
@@ -227,7 +228,6 @@ void SensorStore::setStageData(uint8_t *stage, unsigned int start, std::stack<Se
     indexOffset += SensorRecord::SIZE_RECORD;
   }
 }
-
 
 /** 
  * Returns a specified number of records, starting

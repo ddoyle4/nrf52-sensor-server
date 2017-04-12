@@ -31,4 +31,3 @@ void DomesticSensorService::stagingCommandWriteCallback(const uint8_t *command){
 
 //Return bool from here? Allow that to yay/nay the read for any reason
 void DomesticSensorService::stageBeforeReadCallback(){}
-

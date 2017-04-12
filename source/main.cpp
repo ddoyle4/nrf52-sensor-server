@@ -6,7 +6,6 @@
 //#include "BLE_DOMESTING_THERMOMETER_SERVICE/DomesticThermometerService.h"
 #include "BLE_DOMESTIC_SENSOR_SERVICE/BLE_DomesticSensorService.h"
 
-
 #define DATA_PIN p11
 
 //DS1820 probe(DATA_PIN);
@@ -93,10 +92,12 @@ int main()
    * the clock is set to some value so that relative time measurements can be made
    * in the services used. 
    */
+
   usbDebug.printf("START START START\n\r");
   set_time(1256729737);
 
   //  usbDebug.printf("STARTED\n\r");
+
 
   //  eventQueue.call_every(3000, periodicCallback);
 

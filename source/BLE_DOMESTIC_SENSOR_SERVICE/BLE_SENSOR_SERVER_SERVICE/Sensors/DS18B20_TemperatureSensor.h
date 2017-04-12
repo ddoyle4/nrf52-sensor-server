@@ -19,6 +19,7 @@ class DS18B20_TemperatureSensor : public Sensor{
  private:
   PinName assignedPin;
   DS1820 probe;
+
   bool isSane(float value);
 
 };

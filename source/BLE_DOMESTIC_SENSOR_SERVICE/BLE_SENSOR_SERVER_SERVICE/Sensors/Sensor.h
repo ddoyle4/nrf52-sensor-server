@@ -9,6 +9,7 @@ class Sensor {
   ~Sensor();
   virtual float read()=0;
   float getLastReading();
+
  protected:
   float lastReading;
 };

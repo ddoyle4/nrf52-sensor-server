@@ -63,7 +63,6 @@ class SensorServerService {
   BLE &ble;
   Serial *debugger;
   SensorController sensorController;
-
   
  private:
   static uint8_t metadata_data[METADATA_SIZE];

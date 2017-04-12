@@ -1,3 +1,4 @@
+
 #include "SensorStore.h"
 #include <iostream>
 #include <time.h>
@@ -32,6 +33,7 @@ void printStageHex(const uint8_t *store, int size){
   printf("measurement interval: %x %x\n", store[6], store[7]);
 
   int index = 8;
+
   int printSize = store[5];
   
   for (int i = 0; i < size && printSize > 0; i++){

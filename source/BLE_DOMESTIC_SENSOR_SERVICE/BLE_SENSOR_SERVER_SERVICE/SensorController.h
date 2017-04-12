@@ -16,6 +16,7 @@
  *  TODO: perhaps better to just return a struct containing the number of records and a pointer to data.
  */
 
+
 #ifndef __SENSOR_CONTROLLER_H__
 #define __SENSOR_CONTROLLER_H__
 
@@ -68,6 +69,7 @@ class SensorController {
   void performMeasurement(int t);
   sensorControl sensors[NUM_SENSOR_SLOTS];
   int numActiveSensors;
+
   int currentStoreAllocation;
   int stageSize;
   uint8_t * stage;

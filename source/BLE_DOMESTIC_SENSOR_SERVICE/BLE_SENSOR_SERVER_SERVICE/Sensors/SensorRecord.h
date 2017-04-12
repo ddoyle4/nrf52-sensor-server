@@ -19,8 +19,8 @@ class SensorRecord {
   uint16_t getTimeDelta();
   uint8_t *getData(void);
   const uint8_t *getData(void) const;
+
   float getReading(){ return reading; };
-  
   void print();
  private:
   uint8_t bytes[SIZE_RECORD];

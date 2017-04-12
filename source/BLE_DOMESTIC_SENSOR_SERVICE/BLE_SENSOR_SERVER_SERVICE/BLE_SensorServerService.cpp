@@ -13,6 +13,7 @@ uint8_t SensorServerService::metadata_data[METADATA_SIZE] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
+
 uint8_t SensorServerService::liveRead_data[LIVEREAD_SIZE] = {0};
 uint8_t SensorServerService::configuration_data[CONFIGURATION_SIZE] = {0};
 uint8_t SensorServerService::stagingCommand_data[STAGINGCOMMAND_SIZE] = {0};
@@ -35,7 +36,6 @@ SensorServerService::SensorServerService(BLE &_ble, Serial *_debugger, EventQueu
 				    &configuration_charac,
 				    &stagingCommand_charac,
 				    &stage_charac};
-
   // Read Authorisation callbacks
   metadata_charac.setReadAuthorizationCallback(this, &SensorServerService::metadataCallback);
   liveRead_charac.setReadAuthorizationCallback(this, &SensorServerService::liveReadCallback);  
@@ -69,6 +69,7 @@ void SensorServerService::metadataUpdateCurrentBufferSize(uint16_t newSize, uint
   unsigned int sizeOffset = 20, sizeLength = 2;
   sizeOffset = sizeOffset + (sizeLength * sensorID);
   std::memcpy(&metadata_data[sizeOffset], &newSize, sizeof(uint16_t));
+
   const uint8_t * metadata = metadata_data;
   ble.gattServer().write(metadata_charac.getValueHandle(), metadata, METADATA_SIZE);
 }

@@ -41,6 +41,7 @@ int SensorController::addSensor(Sensor *_sensor, uint16_t interval, float thresh
   newSensor.sensor = _sensor;
   newSensor.measurementInterval = interval;
   newSensor.type = _type;
+
   newSensor.store = new SensorStore(memSize, interval, threshold);
   newSensor.pins = _pins;
   newSensor.numAllocatedPins = numPins;

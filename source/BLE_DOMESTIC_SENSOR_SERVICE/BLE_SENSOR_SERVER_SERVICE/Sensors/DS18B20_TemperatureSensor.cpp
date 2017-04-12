@@ -8,6 +8,7 @@ DS18B20_TemperatureSensor::DS18B20_TemperatureSensor(PinName pin) :
 {
   // TODO maybe move the initialisation of the DS1820 to here and have repeated try/catch
   // block with time number of errors
+
   //allow time for DS1820 library to initialise
   wait(2);
 }
