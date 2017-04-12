@@ -1,0 +1,27 @@
+#include "SensorStore.h"
+#include <iostream>
+
+using namespace std;
+
+int main(){
+
+  SensorStore ss = SensorStore(320, 512, 5);
+
+  int num_readings = 30;
+  float reading = 0.0;
+
+  for(int i = 0; i < num_readings; i++){
+    if (i >= 19){
+      cout << "over 19" << endl;
+    }
+    ss.addReading(reading);
+    reading += 1.0;
+    cout << reading << endl;
+  }
+
+  cout << "store size " << ss.getCurrentSize() << endl;
+
+  
+  cout << "running" << endl;
+  return 0;
+}

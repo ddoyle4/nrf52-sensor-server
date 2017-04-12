@@ -93,7 +93,10 @@ int main()
    * in the services used. 
    */
 
+  usbDebug.printf("START START START\n\r");
   set_time(1256729737);
+
+  //  usbDebug.printf("STARTED\n\r");
 
 
   //  eventQueue.call_every(3000, periodicCallback);
