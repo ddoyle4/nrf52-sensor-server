@@ -27,7 +27,8 @@ SensorServerService::SensorServerService(BLE &_ble, Serial *_debugger, EventQueu
   liveRead_charac(LIVEREAD_UUID, liveRead_data),
   configuration_charac(CONFIGURATION_UUID, configuration_data),
   stagingCommand_charac(STAGINGCOMMAND_UUID, stagingCommand_data),
-  stage_charac(STAGE_UUID, stage_data)
+  stage_charac(STAGE_UUID, stage_data),
+  activeCommand(READ_STATIC)
 {
 
   //set up BLE service
@@ -155,19 +156,27 @@ void SensorServerService::flushStageData(unsigned int oldestLimit, unsigned int 
   ble.gattServer().write(stage_charac.getValueHandle(), sensorController.getPackage(), STAGE_SIZE);
 }
 
+/** 
+ * The command is identified by the first byte. All commands beginning with
+ * 0x0 are requests for data. All commands beginning with 0x1 are requests to
+ * change the configuration.
+ * 
+ * @param data raw command byte array
+ */
 void SensorServerService::stageCommandHandler(const uint8_t *data){
 
   switch(data[0]){
-  case 0x00: //Stage Command
+  case READ_STATIC: //STATIC READ
+    activeCommand = READ_STATIC;
+    
     unsigned int oldLimit, youngLimit;
-
+    
     std::memcpy(&oldLimit, &data[1], sizeof(unsigned int));
     std::memcpy(&youngLimit, &data[5], sizeof(unsigned int));
-    //    debugger->printf("New stage command - old: %d, young: %d\n\r", oldLimit, youngLimit);
     flushStageData(oldLimit, youngLimit, data[9]);
-    //    debugger->printf("Stage command handled successfully\n\r");
     break;
-  case 0x10: //Update config
+
+  case CONFIG_WRITE: //Update config
     uint16_t newInterval;
     float newThreshold;
     
@@ -176,7 +185,7 @@ void SensorServerService::stageCommandHandler(const uint8_t *data){
 
     configUpdateHandler(data[1], newInterval, newThreshold);
     break;
-  default:
+  default: /* TODO: Display error code on stage here*/
     break;
   }
 }

@@ -13,6 +13,17 @@
 #include "Sensors/Sensor.h"
 #include "Sensors/DebugSensor.h"
 
+typedef enum COMMAND_TYPE {
+  /* COMMANDS TO SET DATA ON STAGE */
+  READ_STATIC = 0x00,
+  READ_TRAILING,
+  READ_SEQUENTIAL,
+
+  /* COMMANDS TO UPDATE CONFIGURATION */
+  CONFIG_WRITE = 0x10
+} COMMAND_TYPE;
+
+
 class SensorServerService {
  public:
   static const uint16_t SSS_UUID = 0xA000;
@@ -81,6 +92,8 @@ class SensorServerService {
      are set to 0x00*/
   void stageCommandHandler(const uint8_t *data);
   void configUpdateHandler(uint8_t sensorID, uint16_t interval, float threshold);
+
+  COMMAND_TYPE activeCommand;
 };
 
 
