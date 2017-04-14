@@ -27,10 +27,12 @@ SensorServerService::SensorServerService(BLE &_ble, Serial *_debugger, EventQueu
   liveRead_charac(LIVEREAD_UUID, liveRead_data),
   configuration_charac(CONFIGURATION_UUID, configuration_data),
   stagingCommand_charac(STAGINGCOMMAND_UUID, stagingCommand_data),
-  stage_charac(STAGE_UUID, stage_data),
-  activeCommand(READ_STATIC)
+  stage_charac(STAGE_UUID, stage_data)
 {
 
+  //init active read command with "empty" value
+  activeReadCommand.type = NULL_COMMAND;
+  
   //set up BLE service
   GattCharacteristic *SSSChars[] = {&metadata_charac,
 				    &liveRead_charac,
@@ -129,6 +131,20 @@ void SensorServerService::configUpdate(uint8_t sensorID, uint16_t interval, floa
   ble.gattServer().write(configuration_charac.getValueHandle(), config, CONFIGURATION_SIZE);
 }
 
+bool SensorServerService::slideReadWindow(){
+
+  int windowSize = activeReadCommand.startDelta - activeReadCommand.endDelta;
+
+  // False if error with deltas or if window has already reached current time
+  if(windowSize <= 0 || activeReadCommand.endDelta == 0) { return false; }
+
+  activeReadCommand.startDelta -= windowSize;
+  activeReadCommand.endDelta -=
+    ((int)(activeReadCommand.endDelta - windowSize) < 0) ? activeReadCommand.endDelta : windowSize;
+    
+  return true;
+}
+
 void SensorServerService::stageReadCallback(GattReadAuthCallbackParams *params){
   //TODO check bool return status and yay/nay the read for that
 
@@ -136,11 +152,34 @@ void SensorServerService::stageReadCallback(GattReadAuthCallbackParams *params){
   //to authorise each chunk of data being sent. Must update the start time only once
   if(params->offset == 0){
 
-    sensorController.updateStageStartTime();
-    ble.gattServer().write(stage_charac.getValueHandle(), sensorController.getPackage(), STAGE_SIZE);
-  }
+    switch(activeReadCommand.type){
+    case NULL_COMMAND:
+      break;
+      
+    case READ_STATIC:
+      sensorController.updateStageStartTime();
+      ble.gattServer().write(stage_charac.getValueHandle(), sensorController.getPackage(), STAGE_SIZE, READ_STATIC);
+      break;
+      
+    case READ_TRAILING:
+      flushStageData(activeReadCommand.startDelta, activeReadCommand.endDelta, activeReadCommand.sensorID, READ_TRAILING);
+      ble.gattServer().write(stage_charac.getValueHandle(), sensorController.getPackage(), STAGE_SIZE, READ_TRAILING);
+      break;
 
-  //  stageBeforeReadCallback();
+    case READ_SEQUENTIAL:
+      if(slideReadWindow()){
+	flushStageData(activeReadCommand.startDelta, activeReadCommand.endDelta, activeReadCommand.sensorID, READ_SEQUENTIAL);
+	ble.gattServer().write(stage_charac.getValueHandle(), sensorController.getPackage(), STAGE_SIZE);
+      }
+      break;
+      
+    default: /*TODO: display error*/
+      break;
+    }
+
+  }  
+  
+  stageBeforeReadCallback();
 }
 
 
@@ -151,8 +190,8 @@ void SensorServerService::writeCallback(const GattWriteCallbackParams *params){
   }
 }
 
-void SensorServerService::flushStageData(unsigned int oldestLimit, unsigned int youngLimit, uint8_t sensor){
-  sensorController.flushSensorStore(oldestLimit, youngLimit, sensor);
+void SensorServerService::flushStageData(unsigned int oldestLimit, unsigned int youngLimit, uint8_t sensor, command_type ctype){
+  sensorController.flushSensorStore(oldestLimit, youngLimit, sensor, ctype);
   ble.gattServer().write(stage_charac.getValueHandle(), sensorController.getPackage(), STAGE_SIZE);
 }
 
@@ -165,17 +204,42 @@ void SensorServerService::flushStageData(unsigned int oldestLimit, unsigned int 
  */
 void SensorServerService::stageCommandHandler(const uint8_t *data){
 
+  unsigned int oldLimit, youngLimit;
+  
   switch(data[0]){
   case READ_STATIC: //STATIC READ
-    activeCommand = READ_STATIC;
-    
-    unsigned int oldLimit, youngLimit;
-    
     std::memcpy(&oldLimit, &data[1], sizeof(unsigned int));
     std::memcpy(&youngLimit, &data[5], sizeof(unsigned int));
-    flushStageData(oldLimit, youngLimit, data[9]);
+
+    //keep track of current read command
+    activeReadCommand.type = READ_STATIC;
+    activeReadCommand.startDelta = oldLimit;
+    activeReadCommand.endDelta = youngLimit;
+    activeReadCommand.sensorID = data[9];
+    
+    flushStageData(oldLimit, youngLimit, data[9], READ_STATIC);
+
     break;
 
+  case READ_TRAILING:
+    std::memcpy(&oldLimit, &data[1], sizeof(unsigned int));
+    std::memcpy(&youngLimit, &data[5], sizeof(unsigned int));
+
+    //keep track of current read command
+    activeReadCommand.type = READ_TRAILING;
+    activeReadCommand.startDelta = oldLimit;
+    activeReadCommand.endDelta = youngLimit;
+    activeReadCommand.sensorID = data[9];
+
+    //keep track of current read command
+    activeReadCommand.type = READ_TRAILING;
+    activeReadCommand.startDelta = oldLimit;
+    activeReadCommand.endDelta = youngLimit;
+    activeReadCommand.sensorID = data[9];
+    
+    flushStageData(oldLimit, youngLimit, data[9], READ_STATIC);
+
+    break;
   case CONFIG_WRITE: //Update config
     uint16_t newInterval;
     float newThreshold;
@@ -192,14 +256,12 @@ void SensorServerService::stageCommandHandler(const uint8_t *data){
 
 void SensorServerService::configUpdateHandler(uint8_t sensorID, uint16_t interval, float threshold){
   sensorController.getSensorStore(sensorID)->setThreshold(threshold);
-
-  //update config characteristic
   configUpdate(sensorID, interval, threshold);
 }
 
 int SensorServerService::addSensor(Sensor *sensor, uint16_t interval, float threshold, sensorType type, PinName *pins, int numPins, int memSize){
   int newSensorID = sensorController.addSensor(sensor, interval, threshold, type, pins, numPins, memSize);
-  //TODO tidy this up
+
   newSensorID = (newSensorID > 15) ? 15 : newSensorID;
   if(newSensorID >= 0){
     metadataUpdateSensorType((uint8_t)newSensorID, (uint8_t)type);

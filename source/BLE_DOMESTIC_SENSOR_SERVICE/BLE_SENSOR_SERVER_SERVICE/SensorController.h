@@ -58,7 +58,7 @@ class SensorController {
   int getNumSensors(){ return numActiveSensors; }
   Sensor * getSensor(int sensorID){ return sensors[sensorID].sensor; }
   SensorStore * getSensorStore(int sensorID){ return sensors[sensorID].store; }
-  unsigned int flushSensorStore(unsigned int oldestLimit, unsigned int youngestLimit, uint8_t sensor);
+  unsigned int flushSensorStore(unsigned int oldestLimit, unsigned int youngestLimit, uint8_t sensor, command_type ctype);
   const uint8_t * getPackage() const;
   uint16_t getMaxBufferSize();
   void updateStageStartTime();

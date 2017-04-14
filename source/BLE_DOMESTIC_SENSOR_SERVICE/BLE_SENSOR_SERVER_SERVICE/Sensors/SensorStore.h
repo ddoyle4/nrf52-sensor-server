@@ -9,6 +9,18 @@
 #include <stack>
 #include <time.h>
 
+typedef enum command_type {
+  /* COMMANDS TO SET DATA ON STAGE */
+  READ_STATIC = 0x00,
+  READ_TRAILING,
+  READ_SEQUENTIAL,
+
+  /* COMMANDS TO UPDATE CONFIGURATION */
+  CONFIG_WRITE = 0x10,
+  NULL_COMMAND
+} command_type;
+
+
 class SensorStore {
 
  public:
@@ -21,7 +33,12 @@ class SensorStore {
   ~SensorStore();
   int getStoreSize();
   void addReading(float reading);
-  unsigned int flush(uint8_t * stage, unsigned int oldest, unsigned int youngest, uint8_t sensorID, int stageSize);
+  unsigned int flush(uint8_t * stage,
+		     unsigned int oldest,
+		     unsigned int youngest,
+		     uint8_t sensorID,
+		     int stageSize,
+		     command_type ctype);
   SensorRecord getRecord(int index);
   void printStore();
   int getCurrentSize();
@@ -35,7 +52,8 @@ class SensorStore {
 		    unsigned int lastStageTimeDelta,
 		    uint8_t sensorID,
 		    bool missingFlag,
-		    bool averageCarriedForward
+		    bool averageCarriedForward,
+		    command_type ctype
 		    );
   unsigned int getOldestRealTimeDelta();
   void formatStage(uint8_t *stage, int size);

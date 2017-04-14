@@ -8,21 +8,19 @@
 #include "GattCharacteristic.h"
 #include "GattCallbackParamTypes.h"
 #include "SensorController.h"
+#include "Sensors/SensorStore.h"
 #include "Sensors/DS18B20_TemperatureSensor.h"
 #include "Sensors/RangeFinder.h"
 #include "Sensors/Sensor.h"
 #include "Sensors/DebugSensor.h"
 
-typedef enum COMMAND_TYPE {
-  /* COMMANDS TO SET DATA ON STAGE */
-  READ_STATIC = 0x00,
-  READ_TRAILING,
-  READ_SEQUENTIAL,
 
-  /* COMMANDS TO UPDATE CONFIGURATION */
-  CONFIG_WRITE = 0x10
-} COMMAND_TYPE;
-
+/* Tracks the last valid command to set data to stage */
+struct active_read_command {
+  command_type type;
+  unsigned int startDelta, endDelta;
+  uint8_t sensorID;
+};
 
 class SensorServerService {
  public:
@@ -59,7 +57,7 @@ class SensorServerService {
 
   /* Stage */
   uint8_t * getStageData() { return stage_data; }
-  void flushStageData(unsigned int oldestLimit, unsigned int youngestLimit, uint8_t sensor);
+  void flushStageData(unsigned int oldestLimit, unsigned int youngestLimit, uint8_t sensor, command_type ctype);
   virtual void stageBeforeReadCallback() =0;
 
   /* Callback Functions */
@@ -93,7 +91,10 @@ class SensorServerService {
   void stageCommandHandler(const uint8_t *data);
   void configUpdateHandler(uint8_t sensorID, uint16_t interval, float threshold);
 
-  COMMAND_TYPE activeCommand;
+  active_read_command activeReadCommand;
+
+  /* For sequential reads*/
+  bool slideReadWindow();
 };
 
 

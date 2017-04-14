@@ -70,10 +70,10 @@ int SensorController::addSensor(Sensor *_sensor, uint16_t interval, float thresh
  * 
  * @return size of internal stage that was flushed 
  */
-unsigned int SensorController::flushSensorStore(unsigned int oldLimit, unsigned int youngLimit, uint8_t sensor){
+unsigned int SensorController::flushSensorStore(unsigned int oldLimit, unsigned int youngLimit, uint8_t sensor, command_type ctype){
   SensorStore * store = sensors[sensor].store;
   lastStartTimeUpdate = time(NULL);
-  unsigned int numRecords = store->flush(stage, oldLimit, youngLimit, sensor, stageSize);
+  unsigned int numRecords = store->flush(stage, oldLimit, youngLimit, sensor, stageSize, ctype);
   return (numRecords * SensorStore::STAGE_RECORD_UNIT_SIZE) + SensorStore::STAGE_HEADER_SIZE;
 }
 
