@@ -133,15 +133,28 @@ void SensorServerService::configUpdate(uint8_t sensorID, uint16_t interval, floa
 
 bool SensorServerService::slideReadWindow(){
 
+
   int windowSize = activeReadCommand.startDelta - activeReadCommand.endDelta;
 
+  //need to account for drift in time
+  unsigned int timeDiff = (unsigned int)difftime(time(NULL), activeReadCommand.commandTime);
+
+  debugger->printf("old: %u, young: %u, win-size: %d, time-diff: %u\n\r", activeReadCommand.startDelta, activeReadCommand.endDelta, windowSize, timeDiff);
   // False if error with deltas or if window has already reached current time
   if(windowSize <= 0 || activeReadCommand.endDelta == 0) { return false; }
 
+  //move window closer across time series
   activeReadCommand.startDelta -= windowSize;
   activeReadCommand.endDelta -=
-    ((int)(activeReadCommand.endDelta - windowSize) < 0) ? activeReadCommand.endDelta : windowSize;
-    
+    (((int)(activeReadCommand.endDelta - windowSize) < 0) ? activeReadCommand.endDelta : windowSize);
+
+  debugger->printf("new old: %u, new young: %u\n\r", activeReadCommand.startDelta, activeReadCommand.endDelta);
+  
+  //account for drift in time
+  activeReadCommand.startDelta += timeDiff;
+  activeReadCommand.endDelta += timeDiff;
+  debugger->printf("adj old: %u, adj young: %u\n\r", activeReadCommand.startDelta, activeReadCommand.endDelta);
+  
   return true;
 }
 
@@ -149,7 +162,7 @@ void SensorServerService::stageReadCallback(GattReadAuthCallbackParams *params){
   //TODO check bool return status and yay/nay the read for that
 
   //NOTE this is called multiple times for each stage read - looks like it's called
-  //to authorise each chunk of data being sent. Must update the start time only once
+  //to authorise each chunk of data being sent. Must apply this logic only once
   if(params->offset == 0){
 
     switch(activeReadCommand.type){
@@ -231,15 +244,25 @@ void SensorServerService::stageCommandHandler(const uint8_t *data){
     activeReadCommand.endDelta = youngLimit;
     activeReadCommand.sensorID = data[9];
 
-    //keep track of current read command
-    activeReadCommand.type = READ_TRAILING;
-    activeReadCommand.startDelta = oldLimit;
-    activeReadCommand.endDelta = youngLimit;
-    activeReadCommand.sensorID = data[9];
-    
     flushStageData(oldLimit, youngLimit, data[9], READ_STATIC);
 
     break;
+  case READ_SEQUENTIAL:
+    debugger->printf("stage read sequential \n\r");
+    std::memcpy(&oldLimit, &data[1], sizeof(unsigned int));
+    std::memcpy(&youngLimit, &data[5], sizeof(unsigned int));
+
+    //keep track of current read command
+    activeReadCommand.type = READ_SEQUENTIAL;
+    activeReadCommand.startDelta = oldLimit;
+    activeReadCommand.endDelta = youngLimit;
+    activeReadCommand.sensorID = data[9];
+    activeReadCommand.commandTime = time(NULL);
+    
+    flushStageData(oldLimit, youngLimit, data[9], READ_SEQUENTIAL);
+
+    break;
+    
   case CONFIG_WRITE: //Update config
     uint16_t newInterval;
     float newThreshold;

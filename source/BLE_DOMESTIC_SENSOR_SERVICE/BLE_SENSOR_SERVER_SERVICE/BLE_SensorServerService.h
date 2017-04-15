@@ -5,6 +5,7 @@
 #include "ble/Gap.h"
 #include <cstring>
 #include "mbed.h"
+#include <time.h>
 #include "GattCharacteristic.h"
 #include "GattCallbackParamTypes.h"
 #include "SensorController.h"
@@ -20,6 +21,7 @@ struct active_read_command {
   command_type type;
   unsigned int startDelta, endDelta;
   uint8_t sensorID;
+  time_t commandTime;
 };
 
 class SensorServerService {
