@@ -139,7 +139,7 @@ bool SensorServerService::slideReadWindow(){
   //need to account for drift in time
   unsigned int timeDiff = (unsigned int)difftime(time(NULL), activeReadCommand.commandTime);
 
-  debugger->printf("old: %u, young: %u, win-size: %d, time-diff: %u\n\r", activeReadCommand.startDelta, activeReadCommand.endDelta, windowSize, timeDiff);
+  //debugger->printf("old: %u, young: %u, win-size: %d, time-diff: %u\n\r", activeReadCommand.startDelta, activeReadCommand.endDelta, windowSize, timeDiff);
   // False if error with deltas or if window has already reached current time
   if(windowSize <= 0 || activeReadCommand.endDelta == 0) { return false; }
 
@@ -148,12 +148,12 @@ bool SensorServerService::slideReadWindow(){
   activeReadCommand.endDelta -=
     (((int)(activeReadCommand.endDelta - windowSize) < 0) ? activeReadCommand.endDelta : windowSize);
 
-  debugger->printf("new old: %u, new young: %u\n\r", activeReadCommand.startDelta, activeReadCommand.endDelta);
+  //debugger->printf("new old: %u, new young: %u\n\r", activeReadCommand.startDelta, activeReadCommand.endDelta);
   
   //account for drift in time
   activeReadCommand.startDelta += timeDiff;
   activeReadCommand.endDelta += timeDiff;
-  debugger->printf("adj old: %u, adj young: %u\n\r", activeReadCommand.startDelta, activeReadCommand.endDelta);
+  //debugger->printf("adj old: %u, adj young: %u\n\r", activeReadCommand.startDelta, activeReadCommand.endDelta);
   
   return true;
 }
@@ -186,7 +186,7 @@ void SensorServerService::stageReadCallback(GattReadAuthCallbackParams *params){
       }
       break;
       
-    default: /*TODO: display error*/
+    default:
       break;
     }
 
@@ -248,7 +248,7 @@ void SensorServerService::stageCommandHandler(const uint8_t *data){
 
     break;
   case READ_SEQUENTIAL:
-    debugger->printf("stage read sequential \n\r");
+    //debugger->printf("stage read sequential \n\r");
     std::memcpy(&oldLimit, &data[1], sizeof(unsigned int));
     std::memcpy(&youngLimit, &data[5], sizeof(unsigned int));
 
@@ -272,7 +272,9 @@ void SensorServerService::stageCommandHandler(const uint8_t *data){
 
     configUpdateHandler(data[1], newInterval, newThreshold);
     break;
-  default: /* TODO: Display error code on stage here*/
+  default:
+    sensorController.writeErrorCode(UNRECOGNISED_COMMAND);
+    ble.gattServer().write(stage_charac.getValueHandle(), sensorController.getPackage(), STAGE_SIZE);    
     break;
   }
 }

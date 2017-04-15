@@ -26,6 +26,10 @@
 #include <vector>
 #include "mbed.h"
 
+typedef enum error_code {
+  UNRECOGNISED_COMMAND
+};
+
 typedef enum sensorType {
   TEMPERATURE,
   RANGE_FINDER,
@@ -50,6 +54,8 @@ class SensorController {
   static const int NUM_SENSOR_SLOTS = 8;
   static const int MAX_STORE_ALLOCATION = 2560;
   static const int STAGE_START_TIME_OFFSET = 1;
+  static const uint8_t ERROR_CODE_FLAG = 0xAA;
+  static const int ERROR_CODE_FLAG_REPETITION = 8;
   
   SensorController(Serial *debug, EventQueue *eventQueue, int stageSize);
   ~SensorController();
@@ -62,7 +68,7 @@ class SensorController {
   const uint8_t * getPackage() const;
   uint16_t getMaxBufferSize();
   void updateStageStartTime();
-  
+  void writeErrorCode(error_code code);
  private:
   Serial *debugger;
   EventQueue *eventQueue;

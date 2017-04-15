@@ -92,7 +92,25 @@ void SensorController::updateStageStartTime(){
   lastStartTimeUpdate = time(NULL);
 }
 
+void SensorController::writeErrorCode(error_code code){
 
+  //identify that error has occured with alternating
+  //patterns of 1/0s
+  debugger->printf("write error code\n\r");
+  for(int i=0; i<ERROR_CODE_FLAG_REPETITION; i++){
+    stage[i] = ERROR_CODE_FLAG;
+  }
+
+  switch(code){
+  case UNRECOGNISED_COMMAND:
+    debugger->printf("error unrecognised command\n\r");
+    stage[ERROR_CODE_FLAG_REPETITION] = 0x00;
+    break;
+  default:
+    break;
+  }
+
+}
 
 
 
