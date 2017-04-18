@@ -38,7 +38,7 @@ class SensorServerService {
   static const unsigned int STAGE_SIZE = 500;
   static const uint16_t STAGE_UUID = 0xA005;
 
-  SensorServerService(BLE &ble, Serial * debugger, EventQueue *eventQueue);
+  SensorServerService(BLE &ble, EventQueue *eventQueue);
   ~SensorServerService();
   
   /* Metadata */
@@ -72,7 +72,6 @@ class SensorServerService {
 
  protected:
   BLE &ble;
-  Serial *debugger;
   SensorController sensorController;
   
  private:

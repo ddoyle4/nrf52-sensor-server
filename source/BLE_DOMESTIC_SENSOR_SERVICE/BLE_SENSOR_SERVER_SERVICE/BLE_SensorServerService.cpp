@@ -19,10 +19,9 @@ uint8_t SensorServerService::configuration_data[CONFIGURATION_SIZE] = {0};
 uint8_t SensorServerService::stagingCommand_data[STAGINGCOMMAND_SIZE] = {0};
 uint8_t SensorServerService::stage_data[STAGE_SIZE] = {0};
 
-SensorServerService::SensorServerService(BLE &_ble, Serial *_debugger, EventQueue *eventQueue) :
+SensorServerService::SensorServerService(BLE &_ble, EventQueue *eventQueue) :
   ble(_ble),
-  debugger(_debugger),
-  sensorController(_debugger, eventQueue, STAGE_SIZE),
+  sensorController(eventQueue, STAGE_SIZE),
   metadata_charac(METADATA_UUID, metadata_data),
   liveRead_charac(LIVEREAD_UUID, liveRead_data),
   configuration_charac(CONFIGURATION_UUID, configuration_data),
@@ -139,7 +138,6 @@ bool SensorServerService::slideReadWindow(){
   //need to account for drift in time
   unsigned int timeDiff = (unsigned int)difftime(time(NULL), activeReadCommand.commandTime);
 
-  //debugger->printf("old: %u, young: %u, win-size: %d, time-diff: %u\n\r", activeReadCommand.startDelta, activeReadCommand.endDelta, windowSize, timeDiff);
   // False if error with deltas or if window has already reached current time
   if(windowSize <= 0 || activeReadCommand.endDelta == 0) { return false; }
 

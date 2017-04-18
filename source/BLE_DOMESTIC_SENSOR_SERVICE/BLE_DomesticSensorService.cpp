@@ -1,8 +1,7 @@
 #include "BLE_DomesticSensorService.h"
 
-DomesticSensorService::DomesticSensorService(BLE &ble, Serial *usbDebug, EventQueue *eventQueue) :
-  SensorServerService(ble, usbDebug, eventQueue),
-  debugger(usbDebug)
+DomesticSensorService::DomesticSensorService(BLE &ble, EventQueue *eventQueue) :
+  SensorServerService(ble, eventQueue)
 {
   //set up sensors - TODO make this an automatic process based on attached sensors
   //would be cool if could detect automatically

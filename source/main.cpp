@@ -5,15 +5,7 @@
 //#include "BLE_DOMESTING_THERMOMETER_SERVICE/DS1820/DS1820.h"
 //#include "BLE_DOMESTING_THERMOMETER_SERVICE/DomesticThermometerService.h"
 #include "BLE_DOMESTIC_SENSOR_SERVICE/BLE_DomesticSensorService.h"
-
-#define DATA_PIN p11
-
-//DS1820 probe(DATA_PIN);
-
-DigitalOut led1(LED1, 1);
-DigitalOut led2(LED2, 0);
-
-Serial usbDebug(USBTX, USBRX);
+#include "../mbed-os/targets/TARGET_NORDIC/TARGET_NRF5/TARGET_MCU_NRF52832/sdk/softdevice/s132/headers/nrf_soc.h"
 
 const static char     DEVICE_NAME[] = "Domestic Thermometer";
 static const uint16_t uuid16_list[] = {0xFFFF};
@@ -68,16 +60,17 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble.gap().onDisconnection(disconnectionCallback);
 
     /* Setup primary service. */
-    DSServicePtr = new DomesticSensorService(ble, &usbDebug, &eventQueue);
+    DSServicePtr = new DomesticSensorService(ble, &eventQueue);
 
     /* Setup advertising. */
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LIST_16BIT_SERVICE_IDS, (uint8_t *)uuid16_list, sizeof(uuid16_list));
-    //    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::GENERIC_HEART_RATE_SENSOR);
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LOCAL_NAME, (uint8_t *)DEVICE_NAME, sizeof(DEVICE_NAME));
     ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED);
     ble.gap().setAdvertisingInterval(500); /* 1000ms */
     ble.gap().startAdvertising();
+
+    sd_power_dcdc_mode_set(NRF_POWER_DCDC_ENABLE);
 }
 
 void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
@@ -92,22 +85,16 @@ int main()
    * the clock is set to some value so that relative time measurements can be made
    * in the services used. 
    */
-
-  usbDebug.printf("START START START\n\r");
+  Thread::attach_idle_hook(&sleep);
   set_time(1256729737);
 
-  //  usbDebug.printf("STARTED\n\r");
-
-
-  //  eventQueue.call_every(3000, periodicCallback);
-
+  //eventQueue.call_every(3000, periodicCallback);
+  
   BLE &ble = BLE::Instance();
   ble.onEventsToProcess(scheduleBleEventsProcessing);
   ble.init(bleInitComplete);
-
-
-  led2 = 1;
   eventQueue.dispatch_forever();
 
+  
   return 0;
 }

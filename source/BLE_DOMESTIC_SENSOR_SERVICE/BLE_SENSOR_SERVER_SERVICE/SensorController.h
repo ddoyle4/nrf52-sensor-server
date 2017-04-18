@@ -57,7 +57,7 @@ class SensorController {
   static const uint8_t ERROR_CODE_FLAG = 0xAA;
   static const int ERROR_CODE_FLAG_REPETITION = 8;
   
-  SensorController(Serial *debug, EventQueue *eventQueue, int stageSize);
+  SensorController(EventQueue *eventQueue, int stageSize);
   ~SensorController();
   
   int addSensor(Sensor *sensor, uint16_t interval, float threshold, sensorType _type, PinName *pins, int numPins, int memSize);
@@ -70,7 +70,6 @@ class SensorController {
   void updateStageStartTime();
   void writeErrorCode(error_code code);
  private:
-  Serial *debugger;
   EventQueue *eventQueue;
   void performMeasurement(int t);
   sensorControl sensors[NUM_SENSOR_SLOTS];
