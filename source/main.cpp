@@ -5,12 +5,12 @@
 #include "BLE_DOMESTIC_SENSOR_SERVICE/BLE_DomesticSensorService.h"
 #include "../mbed-os/targets/TARGET_NORDIC/TARGET_NRF5/TARGET_MCU_NRF52832/sdk/softdevice/s132/headers/nrf_soc.h"
 
-const static char     DEVICE_NAME[] = "Domestic Thermometer";
+const static char     DEVICE_NAME[] = "SSSPeripheral";
 static const uint16_t uuid16_list[] = {0xFFFF};
 
 /* Storage for current buffer sizes that are sent in 
-ad packets */
-static const uint8_t gapBufferDataSize = 3;
+ad packets - 4 bits each */
+static const int gapBufferDataSize = 4;
 static uint8_t * gapBufferData = (uint8_t *)malloc(sizeof(uint8_t)*gapBufferDataSize);
 
 DigitalOut led1(LED1, 1);
@@ -28,8 +28,11 @@ void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
 
 void periodicCallback(void)
 {
-  led1 = !led1; /* Do blinky on LED1 while we're waiting for BLE events */
+  led1 = !led1; /* Blinky, because why not? */
   
+  //update buffer data for gap ad packet
+  DSServicePtr->updateGapBufferData(gapBufferData);
+
   ble_error_t ret;
   ret=BLE::Instance().gap().updateAdvertisingPayload(GapAdvertisingData::MANUFACTURER_SPECIFIC_DATA, gapBufferData, gapBufferDataSize);
 }

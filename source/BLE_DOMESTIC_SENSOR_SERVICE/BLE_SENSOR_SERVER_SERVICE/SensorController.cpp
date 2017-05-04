@@ -107,6 +107,26 @@ void SensorController::writeErrorCode(error_code code){
 }
 
 
+void SensorController::updateGapBufferData(uint8_t *data){
 
+  float currentSize, maxSize;
+  uint8_t bitVal;
+  SensorStore * store;
+
+  //clear current values
+  for(int i=0; i < 4; i++){
+    data[i] = 0x00;
+  }
+  
+  for(int i = 0; i < numActiveSensors; i++){
+    store = sensors[i].store;
+    currentSize = (float)store->getCurrentSize();
+    maxSize = (float)store->getStoreSize();
+    bitVal = (uint8_t)( ((currentSize / maxSize) * 16.0) + 0.5 );
+
+    if(i%2 == 0){ bitVal <<= 4; } 
+    data[i] |= bitVal;
+  }
+}
 
 

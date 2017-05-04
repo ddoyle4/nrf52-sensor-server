@@ -69,7 +69,8 @@ class SensorServerService {
   void metadataCallback(GattReadAuthCallbackParams * params);
 
   int addSensor(Sensor *sensor, uint16_t interval, float threshold, sensorType _type, PinName *pins, int numPins, int memSize);
-
+  void updateGapBufferData(uint8_t * data);
+  
  protected:
   BLE &ble;
   SensorController sensorController;

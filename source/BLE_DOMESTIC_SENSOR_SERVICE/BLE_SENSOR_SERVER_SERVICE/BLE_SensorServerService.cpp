@@ -297,3 +297,6 @@ int SensorServerService::addSensor(Sensor *sensor, uint16_t interval, float thre
   return -1;
 }
 
+void SensorServerService::updateGapBufferData(uint8_t *data){
+  sensorController.updateGapBufferData(data);
+}

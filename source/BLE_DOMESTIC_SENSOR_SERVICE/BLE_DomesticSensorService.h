@@ -6,7 +6,7 @@
 #include "ble/BLE.h"
 #include "mbed.h"
 
-class DomesticSensorService : SensorServerService {
+class DomesticSensorService : public SensorServerService {
  public:
   DomesticSensorService(BLE &ble, EventQueue *eventQueue);
   ~DomesticSensorService();

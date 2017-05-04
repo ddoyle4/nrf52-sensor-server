@@ -69,6 +69,8 @@ class SensorController {
   uint16_t getMaxBufferSize();
   void updateStageStartTime();
   void writeErrorCode(error_code code);
+  void updateGapBufferData(uint8_t *data);
+  
  private:
   EventQueue *eventQueue;
   void performMeasurement(int t);
