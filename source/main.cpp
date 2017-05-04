@@ -2,13 +2,18 @@
 #include <mbed.h>
 #include "ble/BLE.h"
 #include "ble/Gap.h"
-//#include "BLE_DOMESTING_THERMOMETER_SERVICE/DS1820/DS1820.h"
-//#include "BLE_DOMESTING_THERMOMETER_SERVICE/DomesticThermometerService.h"
 #include "BLE_DOMESTIC_SENSOR_SERVICE/BLE_DomesticSensorService.h"
 #include "../mbed-os/targets/TARGET_NORDIC/TARGET_NRF5/TARGET_MCU_NRF52832/sdk/softdevice/s132/headers/nrf_soc.h"
 
 const static char     DEVICE_NAME[] = "Domestic Thermometer";
 static const uint16_t uuid16_list[] = {0xFFFF};
+
+/* Storage for current buffer sizes that are sent in 
+ad packets */
+static const uint8_t gapBufferDataSize = 3;
+static uint8_t * gapBufferData = (uint8_t *)malloc(sizeof(uint8_t)*gapBufferDataSize);
+
+DigitalOut led1(LED1, 1);
 
 static DomesticSensorService *DSServicePtr;
 
@@ -21,19 +26,12 @@ void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
     BLE::Instance().gap().startAdvertising(); // restart advertising
 }
 
-void updateSensorValue() {
-  /*  probe.convertTemperature(true, DS1820::all_devices);
-  float temp = probe.temperature();
-  dtServicePtr->addTemperatureReading(temp);
-  dtServicePtr->flush();*/
-}
-
 void periodicCallback(void)
 {
-  //    led1 = !led1; /* Do blinky on LED1 while we're waiting for BLE events */
-
-    eventQueue.call(updateSensorValue);
-
+  led1 = !led1; /* Do blinky on LED1 while we're waiting for BLE events */
+  
+  ble_error_t ret;
+  ret=BLE::Instance().gap().updateAdvertisingPayload(GapAdvertisingData::MANUFACTURER_SPECIFIC_DATA, gapBufferData, gapBufferDataSize);
 }
 
 void onBleInitError(BLE &ble, ble_error_t error)
@@ -86,11 +84,13 @@ int main()
    * in the services used. 
    */
   Thread::attach_idle_hook(&sleep);
+
   set_time(1256729737);
 
-  //eventQueue.call_every(3000, periodicCallback);
+  eventQueue.call_every(1000, periodicCallback);
   
   BLE &ble = BLE::Instance();
+
   ble.onEventsToProcess(scheduleBleEventsProcessing);
   ble.init(bleInitComplete);
   eventQueue.dispatch_forever();
