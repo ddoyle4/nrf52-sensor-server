@@ -93,8 +93,9 @@ int SensorStore::getCurrentSize(){
  * 
  * @return the number of records that were written to the stage
  */
-
-unsigned int SensorStore::flush(uint8_t *stage, unsigned int oldestTimeDelta, unsigned int youngestTimeDelta, uint8_t sensorID, int stageSize){  
+unsigned int SensorStore::flush(uint8_t *stage, unsigned int oldestTimeDelta,
+				unsigned int youngestTimeDelta, uint8_t sensorID,
+				int stageSize, command_type ctype){  
 
   //check for space - in a perfect world this wouldn't be necessary
   if(stageSize < (STAGE_HEADER_SIZE + SensorRecord::SIZE_RECORD)){ return 0; }
@@ -163,14 +164,14 @@ unsigned int SensorStore::flush(uint8_t *stage, unsigned int oldestTimeDelta, un
      **/
     records.push(getRecord((top - 1)%storeSize));
     double timeDelta = difftime(time(NULL), lastReadingTime) + 0.5;
-    setStageData(stage, oldestTimeDelta, records, (unsigned int)timeDelta, sensorID, false, true);
+    setStageData(stage, oldestTimeDelta, records, (unsigned int)timeDelta, sensorID, false, true, ctype);
     
     return 1;
   }
 
   
   double timeDelta = difftime(time(NULL), lastReadingTime) + accumulatedRelTime + 0.5;
-  setStageData(stage, oldestTimeDelta, records, (unsigned int)timeDelta, sensorID, missedData, false);
+  setStageData(stage, oldestTimeDelta, records, (unsigned int)timeDelta, sensorID, missedData, false, ctype);
   
   return records.size();
 }
@@ -197,8 +198,10 @@ unsigned int SensorStore::getOldestRealTimeDelta(){
   return (relationalTimeDelta * measurementInterval) + timeDelta;
 }
 
-void SensorStore::setStageData(uint8_t *stage, unsigned int start, std::stack<SensorRecord> records,
-			       unsigned int timeDelta, uint8_t sensorID, bool missing, bool averageCarriedForward){
+void SensorStore::setStageData(uint8_t *stage, unsigned int start,
+			       std::stack<SensorRecord> records, unsigned int timeDelta,
+			       uint8_t sensorID, bool missing,
+			       bool averageCarriedForward, command_type ctype){
 
   int indexOffset = 0, size = records.size();
 
@@ -208,6 +211,19 @@ void SensorStore::setStageData(uint8_t *stage, unsigned int start, std::stack<Se
   if(averageCarriedForward){ flagsAndSensorID |= 0x40; }
   
   flagsAndSensorID = flagsAndSensorID | (sensorID & 0x0F);
+
+  //stage behaviour flag
+  switch (ctype) {
+  case READ_TRAILING:
+    flagsAndSensorID |= 0X10; 
+    break;
+  case READ_SEQUENTIAL:
+    flagsAndSensorID |= 0X20; 
+    break;
+  default:
+    break;
+  }
+  
   stage[indexOffset++] = flagsAndSensorID;
 
   //set starting time

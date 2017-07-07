@@ -1,7 +1,6 @@
 #include "SensorController.h"
 
-SensorController::SensorController(Serial *debug, EventQueue *queue, int _stageSize) :
-  debugger(debug),
+SensorController::SensorController(EventQueue *queue, int _stageSize) :
   //  eventQueue(EventQueue(32*EVENTS_EVENT_SIZE)),
   eventQueue(queue),
   numActiveSensors(0),
@@ -18,12 +17,10 @@ SensorController::~SensorController(){
 }
 
 void SensorController::performMeasurement(int t){
-  //  debugger->printf("Performing measurement for: %d", t);
   //  sensors[0].eventID = 0;
   sensorControl sensor = sensors[t];
   float reading = sensor.sensor->read();
   sensor.store->addReading(reading);
-  //  debugger->printf("Sensor: %d READING:%f. STORE SIZE: %d\n\r", t, reading, sensor.store->getStoreSize());
 }
 
 uint16_t SensorController::getMaxBufferSize(){
@@ -70,10 +67,10 @@ int SensorController::addSensor(Sensor *_sensor, uint16_t interval, float thresh
  * 
  * @return size of internal stage that was flushed 
  */
-unsigned int SensorController::flushSensorStore(unsigned int oldLimit, unsigned int youngLimit, uint8_t sensor){
+unsigned int SensorController::flushSensorStore(unsigned int oldLimit, unsigned int youngLimit, uint8_t sensor, command_type ctype){
   SensorStore * store = sensors[sensor].store;
   lastStartTimeUpdate = time(NULL);
-  unsigned int numRecords = store->flush(stage, oldLimit, youngLimit, sensor, stageSize);
+  unsigned int numRecords = store->flush(stage, oldLimit, youngLimit, sensor, stageSize, ctype);
   return (numRecords * SensorStore::STAGE_RECORD_UNIT_SIZE) + SensorStore::STAGE_HEADER_SIZE;
 }
 
@@ -87,14 +84,49 @@ void SensorController::updateStageStartTime(){
   std::memcpy(&startTime, &stage[STAGE_START_TIME_OFFSET], sizeof(unsigned int));
   double elapsedTime = difftime(time(NULL), lastStartTimeUpdate);
   unsigned int newStartTime = startTime + (unsigned int)(elapsedTime + 0.5);
-  //  debugger->printf("start: %d, elapsed: %d, newStartTime: %d\n\n", startTime, elapsedTime, newStartTime);
   std::memcpy(&stage[STAGE_START_TIME_OFFSET], &newStartTime, sizeof(unsigned int));
   lastStartTimeUpdate = time(NULL);
 }
 
+void SensorController::writeErrorCode(error_code code){
+
+  //identify that error has occured with alternating
+  //patterns of 1/0s
+  for(int i=0; i<ERROR_CODE_FLAG_REPETITION; i++){
+    stage[i] = ERROR_CODE_FLAG;
+  }
+
+  switch(code){
+  case UNRECOGNISED_COMMAND:
+    stage[ERROR_CODE_FLAG_REPETITION] = 0x00;
+    break;
+  default:
+    break;
+  }
+
+}
 
 
+void SensorController::updateGapBufferData(uint8_t *data){
 
+  float currentSize, maxSize;
+  uint8_t bitVal;
+  SensorStore * store;
 
+  //clear current values
+  for(int i=0; i < 4; i++){
+    data[i] = 0x00;
+  }
+  
+  for(int i = 0; i < numActiveSensors; i++){
+    store = sensors[i].store;
+    currentSize = (float)store->getCurrentSize();
+    maxSize = (float)store->getStoreSize();
+    bitVal = (uint8_t)( ((currentSize / maxSize) * 16.0) + 0.5 );
+
+    if(i%2 == 0){ bitVal <<= 4; } 
+    data[i] |= bitVal;
+  }
+}
 
 

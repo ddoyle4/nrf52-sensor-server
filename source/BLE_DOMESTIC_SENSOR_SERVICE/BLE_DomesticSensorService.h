@@ -6,11 +6,10 @@
 #include "ble/BLE.h"
 #include "mbed.h"
 
-class DomesticSensorService : SensorServerService {
+class DomesticSensorService : public SensorServerService {
  public:
-  DomesticSensorService(BLE &ble, Serial *usbDebug, EventQueue *eventQueue);
+  DomesticSensorService(BLE &ble, EventQueue *eventQueue);
   ~DomesticSensorService();
-  Serial * debugger;
 
  private:
   void configurationWriteCallback(uint16_t interval, uint32_t threshold);

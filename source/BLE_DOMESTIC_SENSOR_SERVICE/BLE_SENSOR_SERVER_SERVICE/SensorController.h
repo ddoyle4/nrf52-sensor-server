@@ -26,6 +26,10 @@
 #include <vector>
 #include "mbed.h"
 
+typedef enum error_code {
+  UNRECOGNISED_COMMAND
+};
+
 typedef enum sensorType {
   TEMPERATURE,
   RANGE_FINDER,
@@ -50,21 +54,24 @@ class SensorController {
   static const int NUM_SENSOR_SLOTS = 8;
   static const int MAX_STORE_ALLOCATION = 2560;
   static const int STAGE_START_TIME_OFFSET = 1;
+  static const uint8_t ERROR_CODE_FLAG = 0xAA;
+  static const int ERROR_CODE_FLAG_REPETITION = 8;
   
-  SensorController(Serial *debug, EventQueue *eventQueue, int stageSize);
+  SensorController(EventQueue *eventQueue, int stageSize);
   ~SensorController();
   
   int addSensor(Sensor *sensor, uint16_t interval, float threshold, sensorType _type, PinName *pins, int numPins, int memSize);
   int getNumSensors(){ return numActiveSensors; }
   Sensor * getSensor(int sensorID){ return sensors[sensorID].sensor; }
   SensorStore * getSensorStore(int sensorID){ return sensors[sensorID].store; }
-  unsigned int flushSensorStore(unsigned int oldestLimit, unsigned int youngestLimit, uint8_t sensor);
+  unsigned int flushSensorStore(unsigned int oldestLimit, unsigned int youngestLimit, uint8_t sensor, command_type ctype);
   const uint8_t * getPackage() const;
   uint16_t getMaxBufferSize();
   void updateStageStartTime();
+  void writeErrorCode(error_code code);
+  void updateGapBufferData(uint8_t *data);
   
  private:
-  Serial *debugger;
   EventQueue *eventQueue;
   void performMeasurement(int t);
   sensorControl sensors[NUM_SENSOR_SLOTS];
